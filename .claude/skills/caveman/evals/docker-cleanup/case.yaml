@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: docker-cleanup
+expected_outcome: |
+  Đưa lệnh docker đúng (docker system prune / container prune + image prune -a), cảnh báo cụt về mất dữ liệu, không giải thích dài.
