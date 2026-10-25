@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: already-clean-email
+expected_outcome: |
+  Văn bản gốc đã gọn; câu trả lời nói rõ điều đó và giữ gần như nguyên văn, không thêm thắt hay cắt mất thông tin.
