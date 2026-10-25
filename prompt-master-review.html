@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "prompt-master", "runs": [{"id": "code-prompt-python-with_skill", "prompt": "Improve my prompt: \"write a python script to rename files in a folder\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "## Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n\n\n```\nH\u00e3y vi\u1ebft m\u1ed9t script Python 3 (3.8 tr\u1edf l\u00ean, ch\u1ec9 d\u00f9ng th\u01b0 vi\u1ec7n chu\u1ea9n nh\u01b0 `pathlib`, `argparse`, `re`) \u0111\u1ec3 \u0111\u1ed5i t\u00ean h\u00e0ng lo\u1ea1t c\u00e1c file trong m\u1ed9t th\u01b0 m\u1ee5c. T\u00f4i d\u00f9ng script n\u00e0y \u0111\u1ec3 s\u1eafp x\u1ebfp l\u1ea1i [lo\u1ea1i file, v\u00ed d\u1ee5: \u1ea3nh ch\u1ee5p t\u1eeb \u0111i\u1ec7n tho\u1ea1i] tr\u00ean [h\u1ec7 \u0111i\u1ec1u h\u00e0nh: Windows / macOS / Linux].\n\n\u0110\u1ea7u v\u00e0o (qua tham s\u1ed1 d\u00f2ng l\u1ec7nh):\n- \u0110\u01b0\u1eddng d\u1eabn th\u01b0 m\u1ee5c c\u1ea7n x\u1eed l\u00fd.\n- Quy t\u1eafc \u0111\u1ed5i t\u00ean: [ch\u1ecdn m\u1ed9t ho\u1eb7c nhi\u1ec1u \u2014 v\u00ed d\u1ee5: th\u00eam ti\u1ec1n t\u1ed1/h\u1eadu t\u1ed1; thay th\u1ebf chu\u1ed7i ho\u1eb7c regex; \u0111\u00e1nh s\u1ed1 th\u1ee9 t\u1ef1 d\u1ea1ng `anh_001.jpg`; \u0111\u1ed5i sang ch\u1eef th\u01b0\u1eddng; th\u00eam ng\u00e0y s\u1eeda \u0111\u1ed5i `YYYY-MM-DD`].\n- Tu\u1ef3 ch\u1ecdn l\u1ecdc theo ph\u1ea7n m\u1edf r\u1ed9ng (v\u00ed d\u1ee5: `--ext .jpg .png`).\n- Tu\u1ef3 ch\u1ecdn `--recursive` \u0111\u1ec3 x\u1eed l\u00fd c\u1ea3 th\u01b0 m\u1ee5c con (m\u1eb7c \u0111\u1ecbnh: kh\u00f4ng).\n\n\u0110\u1ea7u ra:\n- C\u00e1c file \u0111\u01b0\u1ee3c \u0111\u1ed5i t\u00ean ngay trong th\u01b0 m\u1ee5c \u0111\u00f3.\n- In ra m\u00e0n h\u00ecnh t\u1eebng d\u00f2ng `t\u00ean c\u0169 -> t\u00ean m\u1edbi` v\u00e0 t\u1ed5ng s\u1ed1 file \u0111\u00e3 \u0111\u1ed5i.\n\nY\u00eau c\u1ea7u an to\u00e0n:\n- C\u00f3 ch\u1ebf \u0111\u1ed9 `--dry-run` (ch\u1ea1y th\u1eed, ch\u1ec9 in k\u1ebft qu\u1ea3, kh\u00f4ng \u0111\u1ed5i t\u00ean th\u1eadt). N\u00ean \u0111\u1ec3 dry-run l\u00e0 m\u1eb7c \u0111\u1ecbnh v\u00e0 c\u1ea7n `--apply` m\u1edbi \u0111\u1ed5i t\u00ean th\u1eadt.\n- Gi\u1eef nguy\u00ean ph\u1ea7n m\u1edf r\u1ed9ng c\u1ee7a file tr\u1eeb khi quy t\u1eafc y\u00eau c\u1ea7u \u0111\u1ed5i.\n- Ghi file log (CSV ho\u1eb7c JSON) ch\u1ee9a \u00e1nh x\u1ea1 t\u00ean c\u0169 -> t\u00ean m\u1edbi \u0111\u1ec3 c\u00f3 th\u1ec3 ho\u00e0n t\u00e1c.\n\nX\u1eed l\u00fd c\u00e1c tr\u01b0\u1eddng h\u1ee3p bi\u00ean:\n- T\u00ean m\u1edbi tr\u00f9ng v\u1edbi file \u0111\u00e3 t\u1ed3n t\u1ea1i ho\u1eb7c hai file c\u00f9ng ra m\u1ed9t t\u00ean m\u1edbi: kh\u00f4ng ghi \u0111\u00e8, b\u00e1o l\u1ed7i ho\u1eb7c t\u1ef1 th\u00eam h\u1eadu t\u1ed1 `_1`, `_2`.\n- B\u1ecf qua th\u01b0 m\u1ee5c con (khi kh\u00f4ng b\u1eadt `--recursive`), file \u1ea9n (b\u1eaft \u0111\u1ea7u b\u1eb1ng `.`) v\u00e0 ch\u00ednh file script.\n- T\u00ean file c\u00f3 d\u1ea5u ti\u1ebfng Vi\u1ec7t, kho\u1ea3ng tr\u1eafng ho\u1eb7c k\u00fd t\u1ef1 \u0111\u1eb7c bi\u1ec7t.\n- K\u00fd t\u1ef1 kh\u00f4ng h\u1ee3p l\u1ec7 tr\u00ean Windows (`\\ / : * ? \" \u003c > |`).\n- Th\u01b0 m\u1ee5c kh\u00f4ng t\u1ed3n t\u1ea1i, r\u1ed7ng ho\u1eb7c kh\u00f4ng c\u00f3 quy\u1ec1n ghi: b\u00e1o l\u1ed7i r\u00f5 r\u00e0ng, kh\u00f4ng b\u1ecb crash.\n- \u0110\u00e1nh s\u1ed1 theo th\u1ee9 t\u1ef1 \u1ed5n \u0111\u1ecbnh (s\u1eafp x\u1ebfp theo t\u00ean ho\u1eb7c theo ng\u00e0y s\u1eeda \u0111\u1ed5i \u2014 h\u00e3y cho t\u00f4i ch\u1ecdn).\n\n\u0110\u1ecbnh d\u1ea1ng tr\u1ea3 l\u1eddi:\n1. To\u00e0n b\u1ed9 code trong m\u1ed9t kh\u1ed1i code, c\u00f3 type hints, docstring v\u00e0 ch\u00fa th\u00edch ng\u1eafn \u1edf c\u00e1c \u0111o\u1ea1n quan tr\u1ecdng.\n2. 2\u20133 v\u00ed d\u1ee5 l\u1ec7nh ch\u1ea1y c\u1ee5 th\u1ec3 k\u00e8m k\u1ebft qu\u1ea3 mong \u0111\u1ee3i (v\u00ed d\u1ee5: tr\u01b0\u1edbc `IMG_1234.JPG` -> sau `anh_001.jpg`).\n3. M\u1ed9t v\u00e0i test ng\u1eafn b\u1eb1ng `pytest` d\u00f9ng `tmp_path` cho c\u00e1c tr\u01b0\u1eddng h\u1ee3p: \u0111\u1ed5i t\u00ean c\u01a1 b\u1ea3n, tr\u00f9ng t\u00ean, dry-run.\n4. Gi\u1ea3i th\u00edch ng\u1eafn (d\u01b0\u1edbi 150 t\u1eeb) c\u00e1ch m\u1edf r\u1ed9ng th\u00eam quy t\u1eafc \u0111\u1ed5i t\u00ean m\u1edbi.\n```\n\n## Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i\n- N\u00eau r\u00f5 phi\u00ean b\u1ea3n Python v\u00e0 ch\u1ec9 d\u00f9ng th\u01b0 vi\u1ec7n chu\u1ea9n, \u0111\u1ec3 script ch\u1ea1y \u0111\u01b0\u1ee3c ngay m\u00e0 kh\u00f4ng ph\u1ea3i c\u00e0i th\u00eam g\u00ec.\n- \u0110\u1ecbnh ngh\u0129a \u0111\u1ea7u v\u00e0o/\u0111\u1ea7u ra qua tham s\u1ed1 d\u00f2ng l\u1ec7nh, v\u00ec \"rename files\" qu\u00e1 m\u01a1 h\u1ed3 \u2014 AI kh\u00f4ng bi\u1ebft \u0111\u1ed5i theo quy t\u1eafc n\u00e0o. Ch\u1ed7 tr\u1ed1ng `[quy t\u1eafc \u0111\u1ed5i t\u00ean]` \u0111\u1ec3 b\u1ea1n ch\u1ecdn \u0111\u00fang nhu c\u1ea7u.\n- Th\u00eam ch\u1ebf \u0111\u1ed9 `--dry-run` v\u00e0 file log \u0111\u1ec3 ho\u00e0n t\u00e1c, v\u00ec \u0111\u1ed5i t\u00ean h\u00e0ng lo\u1ea1t l\u00e0 thao t\u00e1c d\u1ec5 g\u00e2y m\u1ea5t d\u1eef li\u1ec7u n\u1ebfu sai.\n- Li\u1ec7t k\u00ea c\u00e1c tr\u01b0\u1eddng h\u1ee3p bi\u00ean (tr\u00f9ng t\u00ean, file \u1ea9n, t\u00ean c\u00f3 d\u1ea5u ti\u1ebfng Vi\u1ec7t, k\u00fd t\u1ef1 c\u1ea5m tr\u00ean Windows, l\u1ed7i quy\u1ec1n truy c\u1eadp) \u2014 \u0111\u00e2y l\u00e0 ch\u1ed7 c\u00e1c script \u0111\u1ed5i t\u00ean hay h\u1ecfng nh\u1ea5t.\n- Y\u00eau c\u1ea7u v\u00ed d\u1ee5 ch\u1ea1y v\u00e0 test `pytest` \u0111\u1ec3 b\u1ea1n ki\u1ec3m ch\u1ee9ng script tr\u01b0\u1edbc khi d\u00f9ng tr\u00ean d\u1eef li\u1ec7u th\u1eadt.\n- Quy \u0111\u1ecbnh \u0111\u1ecbnh d\u1ea1ng tr\u1ea3 l\u1eddi \u0111\u1ec3 nh\u1eadn \u0111\u01b0\u1ee3c code, v\u00ed d\u1ee5 v\u00e0 gi\u1ea3i th\u00edch t\u00e1ch b\u1ea1ch, d\u1ec5 sao ch\u00e9p.\n\n## G\u1ee3i \u00fd th\u00eam (tu\u1ef3 ch\u1ecdn)\n- B\u1ea1n mu\u1ed1n \u0111\u1ed5i t\u00ean theo quy t\u1eafc c\u1ee5 th\u1ec3 n\u00e0o? Cho m\u1ed9t v\u00ed d\u1ee5 \"t\u00ean tr\u01b0\u1edbc -> t\u00ean sau\" s\u1ebd gi\u00fap AI l\u00e0m \u0111\u00fang nh\u1ea5t.\n- B\u1ea1n ch\u1ea1y script tr\u00ean h\u1ec7 \u0111i\u1ec1u h\u00e0nh n\u00e0o, v\u00e0 th\u01b0 m\u1ee5c c\u00f3 kho\u1ea3ng bao nhi\u00eau file?\n- B\u1ea1n c\u00f3 c\u1ea7n giao di\u1ec7n \u0111\u1ed3 ho\u1ea1 \u0111\u01a1n gi\u1ea3n (v\u00ed d\u1ee5 `tkinter`) thay v\u00ec d\u00f2ng l\u1ec7nh kh\u00f4ng?\n"}], "grading": {"expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": true, "evidence": "Whole reply in Vietnamese"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": true, "evidence": "Both headings present"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompt in one fenced block"}, {"text": "The improved prompt asks the script to handle edge cases such as name collisions or a dry-run/preview before renaming.", "passed": true, "evidence": "Covers name collisions, --dry-run default"}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "code-prompt-python-without_skill", "prompt": "Improve my prompt: \"write a python script to rename files in a folder\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "Your prompt leaves the most important decision open: **how** the files should be renamed. Without that, any model will guess (usually \"add a prefix\" or \"number them sequentially\") and you'll end up going back and forth. Below is a stronger version you can use as-is, plus a template to adapt.\n\n## Improved prompt (ready to use)\n\n```\nWrite a Python 3.10+ script that batch-renames files in a folder.\n\nWhat it should do:\n- Take the target folder as a command-line argument.\n- Rename files using this pattern: {prefix}_{index:03d}{ext}\n  (e.g. \"IMG_4821.JPG\" -> \"vacation_001.jpg\"), ordered by file modification time, oldest first.\n- Lowercase the file extension.\n- Only process files whose extensions match a list I can pass in (e.g. --ext jpg png); default to all files.\n- Do not recurse into subfolders, and skip hidden files.\n\nSafety requirements:\n- Default to a dry run that prints \"old name -> new name\" for every file; only rename when I pass --apply.\n- Never overwrite an existing file. If a target name is taken, stop and report the conflict.\n- Handle renames that swap names (A->B while B->A) correctly, e.g. by renaming through temporary names first.\n- Write an undo log (CSV of old,new paths) so I can reverse the operation, and provide an --undo option that reads it.\n\nTechnical constraints:\n- Standard library only (pathlib, argparse, csv). No third-party packages.\n- Must work on Windows, macOS and Linux.\n- Clear error messages for: folder doesn't exist, no matching files, permission errors.\n\nOutput:\n- A single file, rename_files.py, with a docstring and comments where the logic isn't obvious.\n- A short usage section showing 3 example commands (dry run, apply, undo).\n```\n\n## Why this works better\n\n| Original gap | What the improved prompt adds |\n|---|---|\n| No renaming rule | A concrete pattern with an example before/after |\n| No ordering | Sort key defined (modification time) so numbering is predictable |\n| No scope | Which files count: extensions, hidden files, subfolders |\n| No safety | Dry run by default, no overwrites, undo log. Batch renames are hard to reverse by hand |\n| No environment | Python version, stdlib-only, cross-platform |\n| No output format | One named file, plus usage examples |\n\n## Reusable template\n\nIf you want a different rule, fill in the brackets:\n\n```\nWrite a Python 3.10+ script that renames files in [folder / folder passed as argument].\n\nRenaming rule: [describe it, e.g. \"replace spaces with underscores and lowercase everything\",\n\"prepend the date taken from EXIF as YYYY-MM-DD_\", \"find-and-replace text X with Y\",\n\"apply a regex: pattern -> replacement\"].\nExample: \"[original name]\" -> \"[desired name]\".\n\nScope: [which files: extensions, include/exclude subfolders, skip hidden files].\nOrder (if numbering): [by name / modified date / created date].\n\nSafety: dry-run preview by default, --apply to execute, never overwrite existing files,\nand keep an undo log.\n\nConstraints: [stdlib only / OK to use X], [OS], [CLI flags vs. hard-coded config].\nOutput: one file named [name].py with brief usage examples.\n```\n\n## Quick tips\n\n- **Always give one before -> after example.** It removes more ambiguity than a paragraph of description.\n- **Ask for a dry run.** That's the single most valuable addition for any file-manipulation script.\n- **Mention edge cases you care about**: duplicate target names, files with no extension, names with Unicode or spaces, very large folders.\n\nIf you tell me the actual renaming rule you have in mind, I can tighten the prompt further for that case.\n"}], "grading": {"expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": false, "evidence": "Entire reply in English"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": false, "evidence": "Uses 'Improved prompt (ready to use)', no template headings"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompt in fenced block"}, {"text": "The improved prompt asks the script to handle edge cases such as name collisions or a dry-run/preview before renaming.", "passed": true, "evidence": "Never overwrite, dry run, swap handling"}], "summary": {"passed": 2, "failed": 2, "total": 4, "pass_rate": 0.5}}}, {"id": "image-prompt-midjourney-with_skill", "prompt": "m\u00ecnh mu\u1ed1n t\u1ea1o \u1ea3nh tr\u00ean midjourney: con m\u00e8o ng\u1ed3i tr\u00ean m\u00e1i nh\u00e0 ph\u1ed1 c\u1ed5 h\u1ed9i an ban \u0111\u00eam. vi\u1ebft l\u1ea1i prompt gi\u00fap m\u00ecnh cho \u0111\u1eb9p h\u01a1n", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "## Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n\n\n```\nM\u1ed9t ch\u00fa m\u00e8o m\u01b0\u1edbp nh\u1ecf ng\u1ed3i y\u00ean tr\u00ean m\u00e1i ng\u00f3i \u00e2m d\u01b0\u01a1ng r\u00eau phong c\u1ee7a m\u1ed9t ng\u00f4i nh\u00e0 c\u1ed5 \u1edf ph\u1ed1 c\u1ed5 H\u1ed9i An v\u1ec1 \u0111\u00eam, quay l\u01b0ng m\u1ed9t n\u1eeda v\u1ec1 ph\u00eda ng\u01b0\u1eddi xem, \u0111u\u00f4i cu\u1ed9n quanh ch\u00e2n, ng\u01b0\u1edbc nh\u00ecn xu\u1ed1ng con ph\u1ed1 b\u00ean d\u01b0\u1edbi. D\u01b0\u1edbi ph\u1ed1 l\u00e0 h\u00e0ng \u0111\u00e8n l\u1ed3ng l\u1ee5a \u0111\u1ecf, v\u00e0ng, cam treo d\u1ecdc nh\u1eefng b\u1ee9c t\u01b0\u1eddng v\u00e0ng nhu\u1ed9m th\u1eddi gian, \u00e1nh \u0111\u00e8n h\u1eaft l\u00ean m\u1eb7t ng\u00f3i v\u00e0 vi\u1ec1n s\u00e1ng \u1ea5m quanh b\u1ed9 l\u00f4ng m\u00e8o. Xa xa th\u1ea5p tho\u00e1ng s\u00f4ng Ho\u00e0i v\u1edbi v\u00e0i chi\u1ebfc \u0111\u00e8n hoa \u0111\u0103ng tr\u00f4i tr\u00ean m\u1eb7t n\u01b0\u1edbc, b\u1ea7u tr\u1eddi xanh \u0111\u1eadm c\u00f3 tr\u0103ng l\u01b0\u1ee1i li\u1ec1m v\u00e0 v\u00e0i ng\u00f4i sao. Kh\u00f4ng kh\u00ed y\u00ean t\u0129nh, ho\u00e0i ni\u1ec7m, h\u01a1i m\u01a1 m\u00e0ng, c\u00f3 ch\u00fat s\u01b0\u01a1ng \u0111\u00eam nh\u1eb9. Phong c\u00e1ch \u1ea3nh nhi\u1ebfp \u1ea3nh \u0111i\u1ec7n \u1ea3nh, ch\u00e2n th\u1ef1c, \u0111\u1ed9 chi ti\u1ebft cao, t\u01b0\u01a1ng ph\u1ea3n gi\u1eefa \u00e1nh \u0111\u00e8n \u1ea5m v\u00e0 b\u00f3ng \u0111\u00eam xanh l\u1ea1nh, chi\u1ec1u s\u00e2u tr\u01b0\u1eddng \u1ea3nh n\u00f4ng (h\u1eadu c\u1ea3nh bokeh \u0111\u00e8n l\u1ed3ng). G\u00f3c m\u00e1y ngang t\u1ea7m m\u00e1i nh\u00e0, t\u1eeb ph\u00eda sau v\u00e0 h\u01a1i ch\u1ebfch b\u00ean c\u1ea1nh ch\u00fa m\u00e8o, m\u00e8o \u0111\u1eb7t theo quy t\u1eafc m\u1ed9t ph\u1ea7n ba, ph\u1ea7n l\u1edbn khung h\u00ecnh d\u00e0nh cho m\u00e1i ph\u1ed1 v\u00e0 \u00e1nh \u0111\u00e8n. --ar 3:2\n```\n\nB\u1ea3n ti\u1ebfng Anh \u0111\u1ec3 d\u00e1n v\u00e0o c\u00f4ng c\u1ee5:\n\n```\nA small tabby cat sitting calmly on the mossy curved yin-yang clay tile roof of an old house in Hoi An Ancient Town at night, seen from behind and slightly to the side, tail wrapped around its paws, gazing down at the street below. Rows of glowing red, yellow and orange silk lanterns hang along weathered mustard-yellow walls, their warm light catching the roof tiles and rim-lighting the cat's fur. In the distance, the Hoai River with a few floating paper lanterns, deep blue night sky with a crescent moon and scattered stars, light night mist. Quiet, nostalgic, dreamy mood. Cinematic photography, photorealistic, highly detailed, warm lantern glow contrasted with cool blue shadows, shallow depth of field, lantern bokeh background. Eye-level with the rooftop, cat placed on the rule-of-thirds line, most of the frame showing the old town rooftops and lights. --ar 3:2 --v 7\n```\n\n## Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i\n- C\u1ee5 th\u1ec3 ho\u00e1 ch\u1ee7 th\u1ec3: ch\u1ecdn m\u00e8o m\u01b0\u1edbp, t\u01b0 th\u1ebf ng\u1ed3i, h\u01b0\u1edbng nh\u00ecn \u2014 gi\u00fap Midjourney kh\u00f4ng t\u1ea1o ra m\u1ed9t con m\u00e8o chung chung, \u0111\u1eb7t ng\u1eabu nhi\u00ean.\n- Th\u00eam c\u00e1c chi ti\u1ebft nh\u1eadn di\u1ec7n H\u1ed9i An (ng\u00f3i \u00e2m d\u01b0\u01a1ng r\u00eau phong, t\u01b0\u1eddng v\u00e0ng, \u0111\u00e8n l\u1ed3ng l\u1ee5a, s\u00f4ng Ho\u00e0i, \u0111\u00e8n hoa \u0111\u0103ng) \u0111\u1ec3 \u1ea3nh nh\u00ecn ra ngay l\u00e0 H\u1ed9i An ch\u1ee9 kh\u00f4ng ph\u1ea3i m\u1ed9t ph\u1ed1 c\u1ed5 ch\u00e2u \u00c1 b\u1ea5t k\u1ef3.\n- M\u00f4 t\u1ea3 \u00e1nh s\u00e1ng v\u00e0 m\u00e0u s\u1eafc r\u00f5 r\u00e0ng: \u0111\u00e8n l\u1ed3ng \u1ea5m t\u01b0\u01a1ng ph\u1ea3n v\u1edbi \u0111\u00eam xanh l\u1ea1nh, vi\u1ec1n s\u00e1ng tr\u00ean l\u00f4ng m\u00e8o \u2014 \u0111\u00e2y l\u00e0 y\u1ebfu t\u1ed1 quy\u1ebft \u0111\u1ecbnh \u1ea3nh \u0111\u00eam c\u00f3 \"\u0111\u1eb9p\" hay kh\u00f4ng.\n- Th\u00eam phong c\u00e1ch (nhi\u1ebfp \u1ea3nh \u0111i\u1ec7n \u1ea3nh, ch\u00e2n th\u1ef1c, bokeh) v\u00e0 kh\u00f4ng kh\u00ed (y\u00ean t\u0129nh, ho\u00e0i ni\u1ec7m) \u0111\u1ec3 \u0111\u1ecbnh h\u01b0\u1edbng th\u1ea9m m\u1ef9.\n- Ch\u1ec9 \u0111\u1ecbnh g\u00f3c m\u00e1y v\u00e0 b\u1ed1 c\u1ee5c (ngang t\u1ea7m m\u00e1i, quy t\u1eafc m\u1ed9t ph\u1ea7n ba) \u0111\u1ec3 khung h\u00ecnh c\u00f3 chi\u1ec1u s\u00e2u.\n- Th\u00eam t\u1ec9 l\u1ec7 khung h\u00ecnh `--ar 3:2` (ki\u1ec3u \u1ea3nh ch\u1ee5p ngang) v\u00e0 b\u1ea3n ti\u1ebfng Anh, v\u00ec Midjourney hi\u1ec3u ti\u1ebfng Anh ch\u00ednh x\u00e1c h\u01a1n; `--v 7` c\u00f3 th\u1ec3 b\u1ecf n\u1ebfu b\u1ea1n d\u00f9ng phi\u00ean b\u1ea3n m\u1eb7c \u0111\u1ecbnh.\n\n## G\u1ee3i \u00fd th\u00eam (tu\u1ef3 ch\u1ecdn)\n- B\u1ea1n mu\u1ed1n \u1ea3nh ch\u00e2n th\u1ef1c nh\u01b0 \u1ea3nh ch\u1ee5p, hay ki\u1ec3u tranh minh ho\u1ea1 (m\u00e0u n\u01b0\u1edbc, anime ki\u1ec3u Ghibli, tranh s\u01a1n d\u1ea7u)? Ch\u1ec9 c\u1ea7n thay c\u1ee5m \"cinematic photography, photorealistic\" b\u1eb1ng phong c\u00e1ch b\u1ea1n th\u00edch.\n- B\u1ea1n \u0111\u1ecbnh d\u00f9ng \u1ea3nh l\u00e0m g\u00ec? N\u1ebfu l\u00e0m h\u00ecnh n\u1ec1n \u0111i\u1ec7n tho\u1ea1i ho\u1eb7c story, \u0111\u1ed5i th\u00e0nh `--ar 9:16`; l\u00e0m h\u00ecnh n\u1ec1n m\u00e1y t\u00ednh th\u00ec d\u00f9ng `--ar 16:9`.\n- C\u00f3 m\u00e0u m\u00e8o c\u1ee5 th\u1ec3 n\u00e0o kh\u00f4ng (m\u00e8o \u0111en, m\u00e8o tr\u1eafng, m\u00e8o tam th\u1ec3)? M\u00e8o \u0111en d\u01b0\u1edbi \u00e1nh \u0111\u00e8n l\u1ed3ng th\u01b0\u1eddng cho hi\u1ec7u \u1ee9ng r\u1ea5t \u1ea5n t\u01b0\u1ee3ng.\n"}], "grading": {"expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": true, "evidence": "Vietnamese prompt and explanation; English only in the paste-in version"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": true, "evidence": "Both headings present"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Both prompts in fenced blocks"}, {"text": "The response includes an English version of the image prompt for pasting into Midjourney.", "passed": true, "evidence": "'B\u1ea3n ti\u1ebfng Anh \u0111\u1ec3 d\u00e1n v\u00e0o c\u00f4ng c\u1ee5' block"}, {"text": "The image prompt specifies lighting/style and an aspect ratio (e.g. --ar).", "passed": true, "evidence": "Lantern light, cinematic style, --ar 3:2"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "image-prompt-midjourney-without_skill", "prompt": "m\u00ecnh mu\u1ed1n t\u1ea1o \u1ea3nh tr\u00ean midjourney: con m\u00e8o ng\u1ed3i tr\u00ean m\u00e1i nh\u00e0 ph\u1ed1 c\u1ed5 h\u1ed9i an ban \u0111\u00eam. vi\u1ebft l\u1ea1i prompt gi\u00fap m\u00ecnh cho \u0111\u1eb9p h\u01a1n", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "M\u00ecnh vi\u1ebft l\u1ea1i prompt cho b\u1ea1n. C\u00f3 1 b\u1ea3n ch\u00ednh v\u00e0 3 phi\u00ean b\u1ea3n kh\u00e1c phong c\u00e1ch. B\u1ea1n copy nguy\u00ean \u0111o\u1ea1n trong khung v\u00e0o Midjourney (g\u00f5 `/imagine` r\u1ed3i d\u00e1n).\n\n## Prompt ch\u00ednh (\u1ea3nh ch\u00e2n th\u1ef1c, \u0111i\u1ec7n \u1ea3nh)\n\n```\nA fluffy ginger cat sitting on the curved yin-yang clay tile roof of an old yellow house in Hoi An Ancient Town at night, glowing silk lanterns in red, orange and yellow strung across the narrow street below, warm lantern light reflecting in the cat's eyes, moss on the weathered roof tiles, soft mist, deep blue night sky with a few stars, calm and nostalgic mood, cinematic lighting, shallow depth of field, bokeh from the lanterns, shot on 35mm lens, highly detailed, photorealistic --ar 3:2 --v 7 --style raw --s 250\n```\n\n**V\u00ec sao b\u1ea3n n\u00e0y \u0111\u1eb9p h\u01a1n prompt g\u1ed1c:**\n- **Ch\u1ee7 th\u1ec3 c\u1ee5 th\u1ec3:** \"m\u00e8o cam l\u00f4ng x\u00f9\" thay v\u00ec \"con m\u00e8o\" chung chung, n\u00ean Midjourney v\u1ebd ra r\u00f5 h\u00ecnh h\u01a1n.\n- **\u0110\u00fang ch\u1ea5t H\u1ed9i An:** m\u00e1i ng\u00f3i \u00e2m d\u01b0\u01a1ng, t\u01b0\u1eddng v\u00e0ng c\u0169, r\u00eau phong, \u0111\u00e8n l\u1ed3ng l\u1ee5a nhi\u1ec1u m\u00e0u. Thi\u1ebfu m\u1ea5y chi ti\u1ebft n\u00e0y th\u00ec \u1ea3nh d\u1ec5 ra \"ph\u1ed1 c\u1ed5 Trung Qu\u1ed1c\" ho\u1eb7c \"ph\u1ed1 c\u1ed5 ch\u00e2u \u00c2u\".\n- **\u00c1nh s\u00e1ng v\u00e0 kh\u00f4ng kh\u00ed:** \u00e1nh \u0111\u00e8n l\u1ed3ng \u1ea5m \u0111\u1ed1i l\u1eadp v\u1edbi tr\u1eddi \u0111\u00eam xanh th\u1eabm, c\u00f3 th\u00eam s\u01b0\u01a1ng m\u1ecfng v\u00e0 bokeh, \u0111\u00e2y l\u00e0 th\u1ee9 l\u00e0m \u1ea3nh \"c\u00f3 h\u1ed3n\".\n- **Th\u00f4ng s\u1ed1 k\u1ef9 thu\u1eadt:**\n  - `--ar 3:2`: khung ngang ki\u1ec3u \u1ea3nh ch\u1ee5p. Mu\u1ed1n l\u00e0m h\u00ecnh n\u1ec1n \u0111i\u1ec7n tho\u1ea1i th\u00ec \u0111\u1ed5i th\u00e0nh `--ar 9:16`.\n  - `--style raw`: \u1ea3nh t\u1ef1 nhi\u00ean h\u01a1n, b\u1edbt ki\u1ec3u \"AI\".\n  - `--s 250`: m\u1ee9c stylize v\u1eeba ph\u1ea3i.\n  - `--v 7`: b\u1ea3n model m\u1edbi. N\u1ebfu t\u00e0i kho\u1ea3n b\u1ea1n ch\u01b0a c\u00f3 v7 th\u00ec \u0111\u1ed5i th\u00e0nh `--v 6.1`.\n\n## 3 phi\u00ean b\u1ea3n kh\u00e1c phong c\u00e1ch\n\n**1. Tranh minh h\u1ecda ki\u1ec3u Ghibli (\u1ea5m \u00e1p, d\u1ec5 th\u01b0\u01a1ng)**\n```\nA small cat sitting peacefully on the old tiled rooftop of Hoi An Ancient Town at night, overlooking a street full of glowing colorful lanterns and the Thu Bon river with floating lantern lights, warm and cozy atmosphere, Studio Ghibli inspired, hand-painted anime background, soft watercolor textures, rich details --ar 16:9 --niji 6 --s 400\n```\n\n**2. Nh\u00ecn t\u1eeb ph\u00eda sau m\u00e8o (c\u1ea3m gi\u00e1c c\u00f4 \u0111\u01a1n, chi\u00eam nghi\u1ec7m)**\n```\nBack view of a black cat sitting alone on a moss-covered ancient tiled roof in Hoi An at night, looking down at the lantern-lit old town and the river, hundreds of glowing lanterns creating warm bokeh, full moon in a misty indigo sky, quiet and melancholic mood, cinematic wide shot, moody color grading, teal and orange tones, ultra detailed --ar 16:9 --v 7 --style raw --s 300\n```\n\n**3. C\u1eadn c\u1ea3nh m\u00e8o (ch\u00e2n dung, chi ti\u1ebft l\u00f4ng)**\n```\nClose-up portrait of a tabby cat on an old Hoi An rooftop at night, golden lantern glow lighting its fur and whiskers, eyes reflecting the lantern lights, blurred background of colorful silk lanterns and yellow walls, creamy bokeh, 85mm lens, f/1.8, award-winning pet photography, hyper-detailed fur --ar 4:5 --v 7 --style raw\n```\n\n## M\u1eb9o ch\u1ec9nh nhanh\n- **\u0110\u1ed5i gi\u1ed1ng m\u00e8o/m\u00e0u l\u00f4ng:** thay `ginger cat` th\u00e0nh `white cat`, `black cat`, `calico cat`, `Siamese cat`...\n- **Th\u00eam chi ti\u1ebft \u0111\u1eb7c tr\u01b0ng:** th\u00eam `Japanese Covered Bridge in the background` (Ch\u00f9a C\u1ea7u) ho\u1eb7c `paper lanterns floating on the river` (th\u1ea3 hoa \u0111\u0103ng).\n- **\u1ea2nh ra l\u1ed9n x\u1ed9n qu\u00e1:** b\u1edbt s\u1ed1 chi ti\u1ebft, ho\u1eb7c th\u00eam `--no people, text, watermark`.\n- **Mu\u1ed1n nhi\u1ec1u bi\u1ebfn th\u1ec3 h\u01a1n:** th\u00eam `--chaos 20`.\n- **Mu\u1ed1n m\u00e8o gi\u1ed1ng h\u1ec7t m\u1ed9t con m\u00e8o c\u00f3 s\u1eb5n (c\u1ee7a b\u1ea1n ch\u1eb3ng h\u1ea1n):** upload \u1ea3nh m\u00e8o r\u1ed3i d\u00f9ng `--cref \u003clink \u1ea3nh>` (character reference) n\u1ebfu phi\u00ean b\u1ea3n c\u1ee7a b\u1ea1n h\u1ed7 tr\u1ee3.\n\nB\u1ea1n mu\u1ed1n theo h\u01b0\u1edbng n\u00e0o (ch\u00e2n th\u1ef1c, ho\u1ea1t h\u00ecnh, hay h\u00ecnh n\u1ec1n \u0111i\u1ec7n tho\u1ea1i)? M\u00ecnh c\u00f3 th\u1ec3 ch\u1ec9nh ti\u1ebfp cho s\u00e1t \u00fd h\u01a1n.\n"}], "grading": {"expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": false, "evidence": "Explanation in Vietnamese but the improved prompts are English only"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": false, "evidence": "Uses 'Prompt ch\u00ednh', no template headings"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompts in fenced blocks"}, {"text": "The response includes an English version of the image prompt for pasting into Midjourney.", "passed": true, "evidence": "Prompts are in English"}, {"text": "The image prompt specifies lighting/style and an aspect ratio (e.g. --ar).", "passed": true, "evidence": "Cinematic lighting, --ar 3:2"}], "summary": {"passed": 3, "failed": 2, "total": 5, "pass_rate": 0.6}}}, {"id": "vague-email-request-with_skill", "prompt": "s\u1eeda gi\u00fap t\u00f4i prompt n\u00e0y cho hay h\u01a1n: \"vi\u1ebft email xin ngh\u1ec9 ph\u00e9p g\u1eedi s\u1ebfp\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "## Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n\n\n```\nT\u00f4i \u0111ang l\u00e0m [ch\u1ee9c danh c\u1ee7a b\u1ea1n] t\u1ea1i [t\u00ean c\u00f4ng ty/ph\u00f2ng ban] v\u00e0 c\u1ea7n g\u1eedi email xin ngh\u1ec9 ph\u00e9p cho qu\u1ea3n l\u00fd tr\u1ef1c ti\u1ebfp l\u00e0 [t\u00ean s\u1ebfp, v\u00ed d\u1ee5: anh Minh / ch\u1ecb Lan].\n\nH\u00e3y vi\u1ebft gi\u00fap t\u00f4i email xin ngh\u1ec9 ph\u00e9p v\u1edbi c\u00e1c th\u00f4ng tin sau:\n- Th\u1eddi gian ngh\u1ec9: t\u1eeb [ng\u00e0y b\u1eaft \u0111\u1ea7u] \u0111\u1ebfn [ng\u00e0y k\u1ebft th\u00fac] (t\u1ed5ng c\u1ed9ng [s\u1ed1 ng\u00e0y] ng\u00e0y l\u00e0m vi\u1ec7c).\n- L\u00fd do ngh\u1ec9: [l\u00fd do, v\u00ed d\u1ee5: vi\u1ec7c gia \u0111\u00ecnh, kh\u00e1m s\u1ee9c kho\u1ebb, v\u1ec1 qu\u00ea] \u2014 ch\u1ec9 c\u1ea7n n\u00eau ng\u1eafn g\u1ecdn, kh\u00f4ng c\u1ea7n \u0111i v\u00e0o chi ti\u1ebft ri\u00eang t\u01b0.\n- B\u00e0n giao c\u00f4ng vi\u1ec7c: [t\u00ean \u0111\u1ed3ng nghi\u1ec7p] s\u1ebd h\u1ed7 tr\u1ee3 x\u1eed l\u00fd [c\u00e1c \u0111\u1ea7u vi\u1ec7c ch\u00ednh] trong th\u1eddi gian t\u00f4i ngh\u1ec9.\n- Li\u00ean l\u1ea1c khi c\u1ea7n g\u1ea5p: [s\u1ed1 \u0111i\u1ec7n tho\u1ea1i / k\u00eanh li\u00ean l\u1ea1c, ho\u1eb7c ghi \"kh\u00f4ng li\u00ean l\u1ea1c \u0111\u01b0\u1ee3c\"].\n\nY\u00eau c\u1ea7u:\n- Gi\u1ecdng v\u0103n l\u1ecbch s\u1ef1, t\u00f4n tr\u1ecdng nh\u01b0ng kh\u00f4ng qu\u00e1 kh\u00e1ch s\u00e1o, ph\u00f9 h\u1ee3p m\u00f4i tr\u01b0\u1eddng c\u00f4ng s\u1edf Vi\u1ec7t Nam.\n- D\u00e0i kho\u1ea3ng 120\u2013180 t\u1eeb, \u0111i th\u1eb3ng v\u00e0o v\u1ea5n \u0111\u1ec1.\n- C\u00f3 d\u00f2ng ti\u00eau \u0111\u1ec1 (subject) r\u00f5 r\u00e0ng, v\u00ed d\u1ee5: \"\u0110\u01a1n xin ngh\u1ec9 ph\u00e9p t\u1eeb [ng\u00e0y] \u0111\u1ebfn [ng\u00e0y] \u2013 [t\u00ean c\u1ee7a b\u1ea1n]\".\n- B\u1ed1 c\u1ee5c: l\u1eddi ch\u00e0o \u2192 xin ph\u00e9p ngh\u1ec9 (th\u1eddi gian, l\u00fd do) \u2192 k\u1ebf ho\u1ea1ch b\u00e0n giao c\u00f4ng vi\u1ec7c \u2192 th\u00f4ng tin li\u00ean l\u1ea1c \u2192 l\u1eddi c\u1ea3m \u01a1n v\u00e0 mong s\u1ebfp ph\u00ea duy\u1ec7t \u2192 k\u00fd t\u00ean.\n- Tr\u00e1nh v\u0103n phong s\u00e1o r\u1ed7ng, xin l\u1ed7i qu\u00e1 m\u1ee9c ho\u1eb7c gi\u1ea3i th\u00edch d\u00e0i d\u00f2ng.\n\n\u0110\u01b0a ra 2 phi\u00ean b\u1ea3n: m\u1ed9t b\u1ea3n trang tr\u1ecdng v\u00e0 m\u1ed9t b\u1ea3n th\u00e2n thi\u1ec7n h\u01a1n (d\u00f9ng khi quan h\u1ec7 v\u1edbi s\u1ebfp g\u1ea7n g\u0169i), \u0111\u1ec3 t\u00f4i ch\u1ecdn.\n```\n\n## Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i\n- Th\u00eam b\u1ed1i c\u1ea3nh ng\u01b0\u1eddi g\u1eedi v\u00e0 ng\u01b0\u1eddi nh\u1eadn (ch\u1ee9c danh, t\u00ean s\u1ebfp), v\u00ec c\u00e1ch x\u01b0ng h\u00f4 v\u00e0 \u0111\u1ed9 trang tr\u1ecdng c\u1ee7a email ph\u1ee5 thu\u1ed9c r\u1ea5t nhi\u1ec1u v\u00e0o m\u1ed1i quan h\u1ec7 n\u00e0y.\n- B\u1ed5 sung c\u00e1c th\u00f4ng tin b\u1eaft bu\u1ed9c c\u1ee7a m\u1ed9t email xin ngh\u1ec9 (th\u1eddi gian, l\u00fd do, b\u00e0n giao, li\u00ean l\u1ea1c) d\u01b0\u1edbi d\u1ea1ng ch\u1ed7 tr\u1ed1ng `[...]` \u0111\u1ec3 b\u1ea1n \u0111i\u1ec1n, tr\u00e1nh vi\u1ec7c AI t\u1ef1 b\u1ecba ra ng\u00e0y th\u00e1ng hay l\u00fd do.\n- Thay ch\u1eef m\u01a1 h\u1ed3 \"hay h\u01a1n\" b\u1eb1ng ti\u00eau ch\u00ed c\u1ee5 th\u1ec3: gi\u1ecdng v\u0103n l\u1ecbch s\u1ef1, \u0111\u1ed9 d\u00e0i 120\u2013180 t\u1eeb, c\u00f3 ti\u00eau \u0111\u1ec1 email.\n- Quy \u0111\u1ecbnh b\u1ed1 c\u1ee5c email \u0111\u1ec3 k\u1ebft qu\u1ea3 g\u1ecdn g\u00e0ng, s\u1ebfp \u0111\u1ecdc l\u00e0 n\u1eafm ngay v\u00e0 d\u1ec5 ph\u00ea duy\u1ec7t.\n- N\u00eau r\u00f5 nh\u1eefng \u0111i\u1ec1u c\u1ea7n tr\u00e1nh (xin l\u1ed7i qu\u00e1 m\u1ee9c, d\u00e0i d\u00f2ng) \u2014 l\u1ed7i th\u01b0\u1eddng g\u1eb7p khi AI vi\u1ebft email xin ph\u00e9p.\n- Y\u00eau c\u1ea7u 2 phi\u00ean b\u1ea3n (trang tr\u1ecdng / th\u00e2n thi\u1ec7n) \u0111\u1ec3 b\u1ea1n ch\u1ecdn cho h\u1ee3p v\u1edbi v\u0103n ho\u00e1 c\u00f4ng ty.\n\n## G\u1ee3i \u00fd th\u00eam (tu\u1ef3 ch\u1ecdn)\n- \u0110\u00e2y l\u00e0 ngh\u1ec9 ph\u00e9p n\u0103m, ngh\u1ec9 \u1ed1m hay ngh\u1ec9 kh\u00f4ng l\u01b0\u01a1ng? C\u00f4ng ty c\u00f3 quy \u0111\u1ecbnh m\u1eabu \u0111\u01a1n ho\u1eb7c th\u1eddi h\u1ea1n b\u00e1o tr\u01b0\u1edbc kh\u00f4ng?\n- B\u1ea1n c\u00f3 c\u1ea7n CC th\u00eam ai (ph\u00f2ng nh\u00e2n s\u1ef1, tr\u01b0\u1edfng nh\u00f3m) kh\u00f4ng? N\u1ebfu c\u00f3, h\u00e3y th\u00eam v\u00e0o prompt \u0111\u1ec3 AI \u0111i\u1ec1u ch\u1ec9nh l\u1eddi ch\u00e0o.\n- B\u1ea1n x\u01b0ng h\u00f4 v\u1edbi s\u1ebfp th\u1ebf n\u00e0o (anh/ch\u1ecb \u2013 em, hay t\u00ean ri\u00eang)? Ghi r\u00f5 \u0111i\u1ec1u n\u00e0y gi\u00fap email t\u1ef1 nhi\u00ean h\u01a1n.\n"}], "grading": {"expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": true, "evidence": "All text and prompt in Vietnamese"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": true, "evidence": "Both headings present as ## headings"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompt in a fenced block"}, {"text": "The improved prompt contains bracketed placeholders for missing details (e.g. dates of leave, reason).", "passed": true, "evidence": "[ng\u00e0y b\u1eaft \u0111\u1ea7u], [l\u00fd do], [t\u00ean s\u1ebfp]..."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "vague-email-request-without_skill", "prompt": "s\u1eeda gi\u00fap t\u00f4i prompt n\u00e0y cho hay h\u01a1n: \"vi\u1ebft email xin ngh\u1ec9 ph\u00e9p g\u1eedi s\u1ebfp\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "Prompt g\u1ed1c \"vi\u1ebft email xin ngh\u1ec9 ph\u00e9p g\u1eedi s\u1ebfp\" ng\u1eafn qu\u00e1. AI kh\u00f4ng bi\u1ebft b\u1ea1n ngh\u1ec9 ng\u00e0y n\u00e0o, ngh\u1ec9 v\u00ec sao, gi\u1ecdng v\u0103n c\u1ea7n trang tr\u1ecdng hay th\u00e2n m\u1eadt, n\u00ean th\u01b0\u1eddng s\u1ebd vi\u1ebft ra m\u1ed9t email chung chung, \u0111\u1ea7y ch\u1ed7 tr\u1ed1ng [ ... ]. \u0110\u00e2y l\u00e0 b\u1ea3n \u0111\u00e3 s\u1eeda, b\u1ea1n ch\u1ec9 c\u1ea7n \u0111i\u1ec1n v\u00e0o ph\u1ea7n trong ngo\u1eb7c vu\u00f4ng:\n\n---\n\n**Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n:**\n\n```\nB\u1ea1n l\u00e0 m\u1ed9t chuy\u00ean vi\u00ean nh\u00e2n s\u1ef1 gi\u1ecfi vi\u1ebft email c\u00f4ng vi\u1ec7c b\u1eb1ng ti\u1ebfng Vi\u1ec7t.\nH\u00e3y vi\u1ebft gi\u00fap t\u00f4i m\u1ed9t email xin ngh\u1ec9 ph\u00e9p g\u1eedi qu\u1ea3n l\u00fd tr\u1ef1c ti\u1ebfp.\n\nTh\u00f4ng tin:\n- T\u00ean t\u00f4i: [Nguy\u1ec5n V\u0103n A], v\u1ecb tr\u00ed: [Nh\u00e2n vi\u00ean Marketing]\n- T\u00ean s\u1ebfp / c\u00e1ch x\u01b0ng h\u00f4: [anh Minh] (t\u00f4i x\u01b0ng \"em\")\n- Th\u1eddi gian ngh\u1ec9: [t\u1eeb th\u1ee9 Hai 03/11 \u0111\u1ebfn h\u1ebft th\u1ee9 T\u01b0 05/11/2026, t\u1ed5ng 3 ng\u00e0y]\n- Lo\u1ea1i ngh\u1ec9: [ngh\u1ec9 ph\u00e9p n\u0103m c\u00f3 l\u01b0\u01a1ng]\n- L\u00fd do: [vi\u1ec7c gia \u0111\u00ecnh] (ch\u1ec9 n\u00eau ng\u1eafn g\u1ecdn, kh\u00f4ng c\u1ea7n chi ti\u1ebft)\n- B\u00e0n giao c\u00f4ng vi\u1ec7c: [ch\u1ecb Lan s\u1ebd ph\u1ee5 tr\u00e1ch chi\u1ebfn d\u1ecbch X; b\u00e1o c\u00e1o tu\u1ea7n \u0111\u00e3 g\u1eedi tr\u01b0\u1edbc th\u1ee9 S\u00e1u]\n- Li\u00ean l\u1ea1c khi ngh\u1ec9: [v\u1eabn tr\u1ea3 l\u1eddi tin nh\u1eafn Zalo/\u0111i\u1ec7n tho\u1ea1i khi c\u00f3 vi\u1ec7c g\u1ea5p]\n\nY\u00eau c\u1ea7u:\n- Gi\u1ecdng v\u0103n: l\u1ecbch s\u1ef1, chuy\u00ean nghi\u1ec7p nh\u01b0ng kh\u00f4ng qu\u00e1 c\u1ee9ng nh\u1eafc, ph\u00f9 h\u1ee3p m\u00f4i tr\u01b0\u1eddng c\u00f4ng s\u1edf Vi\u1ec7t Nam.\n- \u0110\u1ed9 d\u00e0i: kho\u1ea3ng 120\u2013180 ch\u1eef, chia \u0111o\u1ea1n r\u00f5 r\u00e0ng.\n- C\u1ea5u tr\u00fac: ti\u00eau \u0111\u1ec1 email \u2192 l\u1eddi ch\u00e0o \u2192 n\u1ed9i dung xin ngh\u1ec9 (th\u1eddi gian, l\u00fd do) \u2192 k\u1ebf ho\u1ea1ch b\u00e0n giao \u2192 c\u00e1ch li\u00ean l\u1ea1c \u2192 l\u1eddi c\u1ea3m \u01a1n v\u00e0 mong \u0111\u01b0\u1ee3c ch\u1ea5p thu\u1eadn \u2192 k\u00fd t\u00ean.\n- Ti\u00eau \u0111\u1ec1 email ng\u1eafn g\u1ecdn, n\u00eau r\u00f5 m\u1ee5c \u0111\u00edch v\u00e0 ng\u00e0y ngh\u1ec9.\n- Kh\u00f4ng d\u00f9ng t\u1eeb ng\u1eef s\u00e1o r\u1ed7ng hay xin l\u1ed7i qu\u00e1 m\u1ee9c.\n\n\u0110\u1ea7u ra: ch\u1ec9 tr\u1ea3 v\u1ec1 ti\u00eau \u0111\u1ec1 v\u00e0 n\u1ed9i dung email ho\u00e0n ch\u1ec9nh, s\u1eb5n s\u00e0ng \u0111\u1ec3 g\u1eedi.\nN\u1ebfu thi\u1ebfu th\u00f4ng tin quan tr\u1ecdng, h\u00e3y h\u1ecfi l\u1ea1i t\u00f4i tr\u01b0\u1edbc khi vi\u1ebft.\n```\n\n---\n\n**Nh\u1eefng \u0111i\u1ec3m \u0111\u00e3 c\u1ea3i thi\u1ec7n:**\n\n| Th\u00eam v\u00e0o | T\u00e1c d\u1ee5ng |\n|---|---|\n| Vai tr\u00f2 (\"chuy\u00ean vi\u00ean nh\u00e2n s\u1ef1\") | V\u0103n phong chuy\u00ean nghi\u1ec7p h\u01a1n |\n| Th\u00f4ng tin c\u1ee5 th\u1ec3 (ng\u00e0y, l\u00fd do, ng\u01b0\u1eddi nh\u1eadn) | Email d\u00f9ng \u0111\u01b0\u1ee3c ngay, kh\u00f4ng c\u00f2n ch\u1ed7 tr\u1ed1ng ph\u1ea3i t\u1ef1 \u0111i\u1ec1n |\n| C\u00e1ch x\u01b0ng h\u00f4 (anh/ch\u1ecb \u2013 em) | H\u1ee3p v\u1edbi v\u0103n h\u00f3a c\u00f4ng s\u1edf Vi\u1ec7t Nam |\n| K\u1ebf ho\u1ea1ch b\u00e0n giao | S\u1ebfp d\u1ec5 \u0111\u1ed3ng \u00fd h\u01a1n v\u00ec th\u1ea5y c\u00f4ng vi\u1ec7c kh\u00f4ng b\u1ecb gi\u00e1n \u0111o\u1ea1n |\n| Gi\u1ecdng v\u0103n, \u0111\u1ed9 d\u00e0i, c\u1ea5u tr\u00fac | K\u1ebft qu\u1ea3 \u0111\u00fang \u00fd ngay l\u1ea7n \u0111\u1ea7u |\n| \u0110\u1ecbnh d\u1ea1ng \u0111\u1ea7u ra | C\u00f3 s\u1eb5n ti\u00eau \u0111\u1ec1 v\u00e0 n\u1ed9i dung \u0111\u1ec3 sao ch\u00e9p v\u00e0 g\u1eedi |\n| \"H\u1ecfi l\u1ea1i n\u1ebfu thi\u1ebfu\" | AI kh\u00f4ng t\u1ef1 b\u1ecba th\u00f4ng tin |\n\n**B\u1ea3n r\u00fat g\u1ecdn** (n\u1ebfu b\u1ea1n c\u1ea7n nhanh):\n\n```\nVi\u1ebft email xin ngh\u1ec9 ph\u00e9p g\u1eedi s\u1ebfp [anh Minh], t\u00f4i x\u01b0ng \"em\". Ngh\u1ec9 [3 ng\u00e0y, 03\u201305/11/2026] v\u00ec [vi\u1ec7c gia \u0111\u00ecnh].\n[Ch\u1ecb Lan] s\u1ebd nh\u1eadn b\u00e0n giao c\u00f4ng vi\u1ec7c. Gi\u1ecdng l\u1ecbch s\u1ef1, chuy\u00ean nghi\u1ec7p, kho\u1ea3ng 150 ch\u1eef, c\u00f3 ti\u00eau \u0111\u1ec1 email.\n```\n\nB\u1ea1n g\u1eedi m\u00ecnh th\u00f4ng tin th\u1eadt (ng\u00e0y ngh\u1ec9, l\u00fd do, t\u00ean s\u1ebfp) th\u00ec m\u00ecnh vi\u1ebft lu\u00f4n email ho\u00e0n ch\u1ec9nh cho b\u1ea1n.\n"}], "grading": {"expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": true, "evidence": "Vietnamese throughout"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": false, "evidence": "Has 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' (bold) but uses 'Nh\u1eefng \u0111i\u1ec3m \u0111\u00e3 c\u1ea3i thi\u1ec7n', not 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompt in a fenced block"}, {"text": "The improved prompt contains bracketed placeholders for missing details (e.g. dates of leave, reason).", "passed": true, "evidence": "Bracketed fields like [anh Minh], [vi\u1ec7c gia \u0111\u00ecnh]"}], "summary": {"passed": 3, "failed": 1, "total": 4, "pass_rate": 0.75}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "prompt-master", "skill_path": "\u003cpath/to/skill>", "executor_model": "\u003cmodel-name>", "analyzer_model": "\u003cmodel-name>", "timestamp": "2026-10-25T15:11:48Z", "evals_run": ["code-prompt-python", "image-prompt-midjourney", "vague-email-request"], "runs_per_configuration": 1}, "runs": [{"eval_id": "code-prompt-python", "eval_name": "code-prompt-python", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 37.7, "tokens": 52522, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": true, "evidence": "Whole reply in Vietnamese"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": true, "evidence": "Both headings present"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompt in one fenced block"}, {"text": "The improved prompt asks the script to handle edge cases such as name collisions or a dry-run/preview before renaming.", "passed": true, "evidence": "Covers name collisions, --dry-run default"}], "notes": []}, {"eval_id": "image-prompt-midjourney", "eval_name": "image-prompt-midjourney", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 34.8, "tokens": 52111, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": true, "evidence": "Vietnamese prompt and explanation; English only in the paste-in version"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": true, "evidence": "Both headings present"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Both prompts in fenced blocks"}, {"text": "The response includes an English version of the image prompt for pasting into Midjourney.", "passed": true, "evidence": "'B\u1ea3n ti\u1ebfng Anh \u0111\u1ec3 d\u00e1n v\u00e0o c\u00f4ng c\u1ee5' block"}, {"text": "The image prompt specifies lighting/style and an aspect ratio (e.g. --ar).", "passed": true, "evidence": "Lantern light, cinematic style, --ar 3:2"}], "notes": []}, {"eval_id": "vague-email-request", "eval_name": "vague-email-request", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 35.9, "tokens": 51703, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": true, "evidence": "All text and prompt in Vietnamese"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": true, "evidence": "Both headings present as ## headings"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompt in a fenced block"}, {"text": "The improved prompt contains bracketed placeholders for missing details (e.g. dates of leave, reason).", "passed": true, "evidence": "[ng\u00e0y b\u1eaft \u0111\u1ea7u], [l\u00fd do], [t\u00ean s\u1ebfp]..."}], "notes": []}, {"eval_id": "code-prompt-python", "eval_name": "code-prompt-python", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 2, "failed": 2, "total": 4, "time_seconds": 33.0, "tokens": 47959, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": false, "evidence": "Entire reply in English"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": false, "evidence": "Uses 'Improved prompt (ready to use)', no template headings"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompt in fenced block"}, {"text": "The improved prompt asks the script to handle edge cases such as name collisions or a dry-run/preview before renaming.", "passed": true, "evidence": "Never overwrite, dry run, swap handling"}], "notes": []}, {"eval_id": "image-prompt-midjourney", "eval_name": "image-prompt-midjourney", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6, "passed": 3, "failed": 2, "total": 5, "time_seconds": 36.7, "tokens": 48409, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": false, "evidence": "Explanation in Vietnamese but the improved prompts are English only"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": false, "evidence": "Uses 'Prompt ch\u00ednh', no template headings"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompts in fenced blocks"}, {"text": "The response includes an English version of the image prompt for pasting into Midjourney.", "passed": true, "evidence": "Prompts are in English"}, {"text": "The image prompt specifies lighting/style and an aspect ratio (e.g. --ar).", "passed": true, "evidence": "Cinematic lighting, --ar 3:2"}], "notes": []}, {"eval_id": "vague-email-request", "eval_name": "vague-email-request", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4, "time_seconds": 31.4, "tokens": 48103, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The explanatory text and the improved prompt are written in Vietnamese (aside from proper nouns, technical terms, code or tool parameters).", "passed": true, "evidence": "Vietnamese throughout"}, {"text": "The response contains the headings 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' and 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'.", "passed": false, "evidence": "Has 'Prompt \u0111\u00e3 c\u1ea3i thi\u1ec7n' (bold) but uses 'Nh\u1eefng \u0111i\u1ec3m \u0111\u00e3 c\u1ea3i thi\u1ec7n', not 'Nh\u1eefng g\u00ec \u0111\u00e3 thay \u0111\u1ed5i'"}, {"text": "The improved prompt is placed inside a fenced code block so it can be copied.", "passed": true, "evidence": "Prompt in a fenced block"}, {"text": "The improved prompt contains bracketed placeholders for missing details (e.g. dates of leave, reason).", "passed": true, "evidence": "Bracketed fields like [anh Minh], [vi\u1ec7c gia \u0111\u00ecnh]"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 36.1333, "stddev": 1.464, "min": 34.8, "max": 37.7}, "tokens": {"mean": 52112.0, "stddev": 409.5009, "min": 51703, "max": 52522}}, "without_skill": {"pass_rate": {"mean": 0.6167, "stddev": 0.1258, "min": 0.5, "max": 0.75}, "time_seconds": {"mean": 33.7, "stddev": 2.7185, "min": 31.4, "max": 36.7}, "tokens": {"mean": 48157.0, "stddev": 229.8086, "min": 47959, "max": 48409}}, "delta": {"pass_rate": "+0.38", "time_seconds": "+2.4", "tokens": "+3955"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + escapeHtml(summary.passed || 0) + ' passed, ' + escapeHtml(summary.failed || 0) + ' failed of ' + escapeHtml(summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML.replace(/"/g, "&quot;");
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += escapeHtml(metadata.timestamp) + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + escapeHtml(metadata.evals_run.join(", ")) + " &mdash; ";
+      html += escapeHtml(metadata.runs_per_configuration || "?") + (metadata.runs_per_configuration === 1 ? " run" : " runs") + " per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+      // With a single configuration there is nothing to compare: only its column is shown
+      const compare = cells => configs.length >= 2 ? cells : "";
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th>" + compare("<th>" + escapeHtml(labelB) + "</th><th>Delta</th>") + "</tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += compare("<td>" + fmtStat(b.pass_rate, true) + "</td>");
+      html += compare('<td class="' + deltaClass(delta.pass_rate) + '">' + escapeHtml(delta.pass_rate || "—") + "</td>") + "</tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += compare("<td>" + fmtStat(b.time_seconds, false) + "</td>");
+        html += compare('<td class="' + deltaClass(delta.time_seconds) + '">' + escapeHtml(delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td>") + "</tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += compare("<td>" + fmtStat(b.tokens, false) + "</td>");
+        html += compare('<td class="' + deltaClass(delta.tokens) + '">' + escapeHtml(delta.tokens || "—") + "</td>") + "</tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        // Numeric ids first, then ids that are names
+        const rank = id => typeof id === "number" ? 0 : 1;
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) =>
+          rank(a) - rank(b) || (rank(a) ? String(a).localeCompare(String(b)) : a - b));
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = escapeHtml(config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + escapeHtml(run.run_number) + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + escapeHtml(r.passed || 0) + "/" + escapeHtml(r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + escapeHtml(r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + escapeHtml(run.run_number) + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>
