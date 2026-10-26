@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "stop-slop", "runs": [{"id": "already-clean-email-with_skill", "prompt": "g\u1ecdt gi\u00fap: \"Ch\u00e0o anh Tu\u1ea5n, em g\u1eedi l\u1ea1i b\u00e1o c\u00e1o doanh thu th\u00e1ng 10 trong file \u0111\u00ednh k\u00e8m. Doanh thu t\u0103ng 12% so v\u1edbi th\u00e1ng 9, ch\u1ee7 y\u1ebfu nh\u1edd k\u00eanh Shopee. Anh xem v\u00e0 g\u00f3p \u00fd gi\u00fap em tr\u01b0\u1edbc th\u1ee9 S\u00e1u nh\u00e9. Em c\u1ea3m \u01a1n.\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "\u0110o\u1ea1n email n\u00e0y \u0111\u00e3 g\u1ecdn r\u1ed3i, g\u1ea7n nh\u01b0 kh\u00f4ng c\u00f3 g\u00ec \u0111\u1ec3 g\u1ecdt. M\u1ed7i c\u00e2u \u0111\u1ec1u c\u00f3 vi\u1ec7c c\u1ee7a n\u00f3: l\u1eddi ch\u00e0o, n\u00f3i \u0111ang g\u1eedi g\u00ec, n\u00eau con s\u1ed1 ch\u00ednh k\u00e8m l\u00fd do, h\u1ea1n g\u00f3p \u00fd, l\u1eddi c\u1ea3m \u01a1n. M\u00ecnh gi\u1eef nguy\u00ean ch\u1eef, ch\u1ec9 xu\u1ed1ng d\u00f2ng \u0111\u1ec3 \u0111\u1ecdc nh\u01b0 m\u1ed9t email.\n\n## B\u1ea3n \u0111\u00e3 g\u1ecdt\n\n```\nCh\u00e0o anh Tu\u1ea5n,\n\nEm g\u1eedi l\u1ea1i b\u00e1o c\u00e1o doanh thu th\u00e1ng 10 trong file \u0111\u00ednh k\u00e8m. Doanh thu t\u0103ng 12% so v\u1edbi th\u00e1ng 9, ch\u1ee7 y\u1ebfu nh\u1edd k\u00eanh Shopee.\n\nAnh xem v\u00e0 g\u00f3p \u00fd gi\u00fap em tr\u01b0\u1edbc th\u1ee9 S\u00e1u nh\u00e9.\n\nEm c\u1ea3m \u01a1n.\n```\n\n## \u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec\n- Kh\u00f4ng c\u00f3 slop: kh\u00f4ng c\u00f3 m\u1edf b\u00e0i r\u1ed7ng, t\u1eeb hoa m\u1ef9 hay c\u00e2u l\u1eb7p \u00fd. S\u1ed1 li\u1ec7u (12%, th\u00e1ng 9, Shopee) v\u00e0 h\u1ea1n ch\u00f3t (th\u1ee9 S\u00e1u) \u0111\u00e3 c\u1ee5 th\u1ec3.\n- Ch\u1ec9 \u0111\u1ed5i c\u00e1ch tr\u00ecnh b\u00e0y: t\u00e1ch l\u1eddi ch\u00e0o, n\u1ed9i dung, l\u1eddi nh\u1edd v\u00e0 l\u1eddi c\u1ea3m \u01a1n ra t\u1eebng d\u00f2ng nh\u01b0 email th\u01b0\u1eddng th\u1ea5y. Ch\u1eef gi\u1eef nguy\u00ean.\n- G\u1ee3i \u00fd th\u00eam, t\u00f9y b\u1ea1n: n\u1ebfu \"th\u1ee9 S\u00e1u\" d\u1ec5 b\u1ecb hi\u1ec3u nh\u1ea7m tu\u1ea7n n\u00e0o th\u00ec ghi k\u00e8m ng\u00e0y, v\u00ed d\u1ee5 \"tr\u01b0\u1edbc th\u1ee9 S\u00e1u (30/10)\". M\u00ecnh kh\u00f4ng t\u1ef1 th\u00eam ng\u00e0y v\u00e0o b\u1ea3n tr\u00ean.\n\n\u0110\u1ed9 d\u00e0i: 43 \u2192 43 t\u1eeb.\n"}], "grading": {"expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": true, "evidence": "Both headings"}, {"text": "The response states the original and new word counts.", "passed": true, "evidence": "43 \u2192 43 t\u1eeb"}, {"text": "The response explicitly says the original is already concise/clean.", "passed": true, "evidence": "'\u0110o\u1ea1n email n\u00e0y \u0111\u00e3 g\u1ecdn r\u1ed3i'"}, {"text": "The rewritten email keeps all information: b\u00e1o c\u00e1o th\u00e1ng 10, t\u0103ng 12% so v\u1edbi th\u00e1ng 9, k\u00eanh Shopee, g\u00f3p \u00fd tr\u01b0\u1edbc th\u1ee9 S\u00e1u.", "passed": true, "evidence": "Wording unchanged"}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "already-clean-email-without_skill", "prompt": "g\u1ecdt gi\u00fap: \"Ch\u00e0o anh Tu\u1ea5n, em g\u1eedi l\u1ea1i b\u00e1o c\u00e1o doanh thu th\u00e1ng 10 trong file \u0111\u00ednh k\u00e8m. Doanh thu t\u0103ng 12% so v\u1edbi th\u00e1ng 9, ch\u1ee7 y\u1ebfu nh\u1edd k\u00eanh Shopee. Anh xem v\u00e0 g\u00f3p \u00fd gi\u00fap em tr\u01b0\u1edbc th\u1ee9 S\u00e1u nh\u00e9. Em c\u1ea3m \u01a1n.\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "\u0110o\u1ea1n n\u00e0y g\u1ea7n nh\u01b0 kh\u00f4ng c\u1ea7n g\u1ecdt. N\u00f3 \u0111\u00e3 ng\u1eafn, c\u00f3 s\u1ed1 li\u1ec7u c\u1ee5 th\u1ec3 (t\u0103ng 12%, nh\u1edd Shopee), c\u00f3 vi\u1ec7c c\u1ea7n l\u00e0m r\u00f5 r\u00e0ng (g\u00f3p \u00fd tr\u01b0\u1edbc th\u1ee9 S\u00e1u) v\u00e0 kh\u00f4ng c\u00f3 c\u00e2u s\u00e1o r\u1ed7ng.\n\nN\u1ebfu mu\u1ed1n ch\u1ec9nh th\u00ec ch\u1ec9 c\u00f3 hai ch\u1ed7 nh\u1ecf:\n\n> Ch\u00e0o anh Tu\u1ea5n, em g\u1eedi b\u00e1o c\u00e1o doanh thu th\u00e1ng 10 trong file \u0111\u00ednh k\u00e8m. Doanh thu t\u0103ng 12% so v\u1edbi th\u00e1ng 9, ch\u1ee7 y\u1ebfu nh\u1edd k\u00eanh Shopee. Anh xem v\u00e0 g\u00f3p \u00fd gi\u00fap em tr\u01b0\u1edbc th\u1ee9 S\u00e1u nh\u00e9. Em c\u1ea3m \u01a1n anh.\n\nThay \u0111\u1ed5i:\n- **\"g\u1eedi l\u1ea1i\" \u2192 \"g\u1eedi\"**: ch\u1ec9 s\u1eeda n\u1ebfu \u0111\u00e2y l\u00e0 l\u1ea7n g\u1eedi \u0111\u1ea7u. N\u1ebfu anh Tu\u1ea5n \u0111\u00e3 nh\u1eadn b\u1ea3n tr\u01b0\u1edbc th\u00ec gi\u1eef \"g\u1eedi l\u1ea1i\" \u0111\u1ec3 anh \u1ea5y bi\u1ebft \u0111\u00e2y l\u00e0 b\u1ea3n c\u1eadp nh\u1eadt.\n- **\"Em c\u1ea3m \u01a1n\" \u2192 \"Em c\u1ea3m \u01a1n anh\"**: th\u00eam ch\u1eef \"anh\" cho tr\u00f2n c\u00e2u v\u00e0 l\u1ec5 ph\u00e9p h\u01a1n trong email c\u00f4ng vi\u1ec7c. B\u1ea3n g\u1ed1c c\u0169ng kh\u00f4ng sai.\n\nC\u00f2n l\u1ea1i n\u00ean gi\u1eef nguy\u00ean.\n"}], "grading": {"expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": false, "evidence": "No template headings"}, {"text": "The response states the original and new word counts.", "passed": false, "evidence": "No word counts"}, {"text": "The response explicitly says the original is already concise/clean.", "passed": true, "evidence": "Says the email barely needs editing"}, {"text": "The rewritten email keeps all information: b\u00e1o c\u00e1o th\u00e1ng 10, t\u0103ng 12% so v\u1edbi th\u00e1ng 9, k\u00eanh Shopee, g\u00f3p \u00fd tr\u01b0\u1edbc th\u1ee9 S\u00e1u.", "passed": true, "evidence": "All information kept"}], "summary": {"passed": 2, "failed": 2, "total": 4, "pass_rate": 0.5}}}, {"id": "english-linkedin-update-with_skill", "prompt": "This reads like ChatGPT wrote it, can you de-slop it? \"In today's rapidly evolving landscape, I'm thrilled to announce that I've embarked on an exciting new journey as Senior Data Engineer at Acme Logistics! This role is not just a job \u2014 it's a testament to my passion for leveraging cutting-edge technology to unlock seamless, robust, and scalable solutions. I'll be leading the migration of our 40 TB warehouse from on-prem Oracle to Snowflake. I want to express my heartfelt gratitude to everyone who has supported me along the way. Here's to new beginnings! \ud83d\ude80\u2728\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "## B\u1ea3n \u0111\u00e3 g\u1ecdt\n\n```\nI've started a new job as Senior Data Engineer at Acme Logistics, where I'll lead the migration of our 40 TB warehouse from on-prem Oracle to Snowflake. Thanks to everyone who helped me get here.\n```\n\n## \u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec\n- M\u1edf b\u00e0i v\u00e0 k\u1ebft b\u00e0i r\u1ed7ng: \"In today's rapidly evolving landscape\u2026\", \"Here's to new beginnings! \ud83d\ude80\u2728\" \u2192 b\u1ecf c\u1ea3 hai. Ch\u00fang kh\u00f4ng cho ng\u01b0\u1eddi \u0111\u1ecdc bi\u1ebft g\u00ec, v\u00e0 emoji trang tr\u00ed \u0111i k\u00e8m c\u0169ng b\u1ecf lu\u00f4n.\n- C\u00e2u th\u00f4ng b\u00e1o m\u00e0u m\u00e8: \"I'm thrilled to announce that I've embarked on an exciting new journey\" \u2192 \"I've started a new job\". B\u00e0i \u0111\u0103ng \u0111\u00e3 l\u00e0 m\u1ed9t th\u00f4ng b\u00e1o, n\u00ean kh\u00f4ng c\u1ea7n n\u00f3i \"announce\", v\u00e0 \"journey\" ch\u1ec9 l\u00e0 c\u00e1ch n\u00f3i v\u00f2ng c\u1ee7a \"job\".\n- C\u1ea5u tr\u00fac \"not just X, it's Y\" v\u00e0 t\u1eeb hoa m\u1ef9 kh\u00f4ng \u0111o \u0111\u01b0\u1ee3c: \"not just a job \u2014 it's a testament to my passion for leveraging cutting-edge technology to unlock seamless, robust, and scalable solutions\" \u2192 b\u1ecf c\u1ea3 c\u00e2u. C\u00e2u n\u00e0y nh\u1ed3i m\u1ed9t lo\u1ea1t t\u1eeb \u0111\u1eb7c tr\u01b0ng c\u1ee7a AI (testament, leveraging, cutting-edge, unlock) c\u00f9ng b\u1ed9 ba t\u00ednh t\u1eeb cho c\u00f3 nh\u1ecbp, m\u00e0 kh\u00f4ng n\u00f3i g\u00ec c\u1ee5 th\u1ec3. Ph\u1ea7n \"\u0111am m\u00ea c\u00f4ng ngh\u1ec7\" \u0111\u00e3 \u0111\u01b0\u1ee3c th\u1ec3 hi\u1ec7n r\u00f5 h\u01a1n qua chi ti\u1ebft th\u1eadt: d\u1ef1 \u00e1n di chuy\u1ec3n 40 TB.\n- Gi\u1eef l\u1ea1i v\u00e0 \u0111\u01b0a l\u00ean tr\u01b0\u1edbc chi ti\u1ebft \u0111\u1eaft gi\u00e1 nh\u1ea5t: d\u1ef1 \u00e1n di chuy\u1ec3n kho d\u1eef li\u1ec7u 40 TB t\u1eeb Oracle on-prem sang Snowflake. \u0110\u00e2y l\u00e0 c\u00e2u duy nh\u1ea5t trong b\u1ea3n g\u1ed1c mang th\u00f4ng tin, n\u00ean t\u00f4i g\u1ed9p n\u00f3 v\u00e0o c\u00e2u m\u1edf \u0111\u1ea7u.\n- L\u1eddi c\u1ea3m \u01a1n r\u01b0\u1eddm r\u00e0: \"I want to express my heartfelt gratitude to everyone who has supported me along the way\" \u2192 \"Thanks to everyone who helped me get here\". V\u1eabn gi\u1eef \u00fd c\u1ea3m \u01a1n nh\u01b0ng n\u00f3i th\u1eb3ng, \u0111\u00fang gi\u1ecdng th\u00e2n m\u1eadt c\u1ee7a m\u1ed9t b\u00e0i LinkedIn.\n\n\u0110\u1ed9 d\u00e0i: 82 \u2192 35 t\u1eeb.\n\nN\u1ebfu mu\u1ed1n b\u00e0i c\u00f3 s\u1ee9c n\u1eb7ng h\u01a1n n\u1eefa, b\u1ea1n c\u00f3 th\u1ec3 th\u00eam m\u1ed9t chi ti\u1ebft th\u1eadt m\u00e0 b\u1ea3n g\u1ed1c ch\u01b0a c\u00f3, v\u00ed d\u1ee5 th\u1eddi h\u1ea1n d\u1ef1 \u00e1n ho\u1eb7c l\u00fd do chuy\u1ec3n sang Snowflake: `[m\u1ed1c th\u1eddi gian / l\u00fd do c\u1ee5 th\u1ec3]`.\n"}], "grading": {"expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": true, "evidence": "Both headings"}, {"text": "The response states the original and new word counts.", "passed": true, "evidence": "82 \u2192 35 t\u1eeb"}, {"text": "The rewritten post is in English while the explanation of changes is in Vietnamese.", "passed": true, "evidence": "Post in English, explanation in Vietnamese"}, {"text": "The rewritten post keeps: Senior Data Engineer, Acme Logistics, migrating a 40 TB warehouse from on-prem Oracle to Snowflake.", "passed": true, "evidence": "All facts kept"}, {"text": "The rewritten post contains none of: 'rapidly evolving landscape', 'testament', 'leveraging', 'cutting-edge', 'seamless', 'robust', 'embarked'.", "passed": true, "evidence": "None of the listed words remain"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "english-linkedin-update-without_skill", "prompt": "This reads like ChatGPT wrote it, can you de-slop it? \"In today's rapidly evolving landscape, I'm thrilled to announce that I've embarked on an exciting new journey as Senior Data Engineer at Acme Logistics! This role is not just a job \u2014 it's a testament to my passion for leveraging cutting-edge technology to unlock seamless, robust, and scalable solutions. I'll be leading the migration of our 40 TB warehouse from on-prem Oracle to Snowflake. I want to express my heartfelt gratitude to everyone who has supported me along the way. Here's to new beginnings! \ud83d\ude80\u2728\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "Here's a cleaner version:\n\n> I've started a new job as Senior Data Engineer at Acme Logistics. My first big project: leading the migration of our 40 TB warehouse from on-prem Oracle to Snowflake.\n>\n> Thanks to everyone who helped me get here.\n\nWhat I cut and why:\n\n- **\"In today's rapidly evolving landscape\"**: an opener that says nothing. The post works fine without it.\n- **\"thrilled to announce,\" \"embarked on an exciting new journey\"**: stock phrases for \"I started a new job.\" Saying it plainly sounds more confident.\n- **\"not just a job \u2014 it's a testament to\u2026\"**: the \"not X, it's Y\" setup is one of the clearest ChatGPT tells, and the em dash makes it more obvious.\n- **\"leveraging cutting-edge technology to unlock seamless, robust, and scalable solutions\"**: a pile of buzzwords that could describe any tech job. The Oracle-to-Snowflake migration is the specific, interesting part, so I made it the center of the post.\n- **\"heartfelt gratitude\u2026 along the way,\" \"Here's to new beginnings!\"**: shortened to one plain thank-you. The sign-off was filler.\n- **\ud83d\ude80\u2728**: removed. Put one back if that's your style, but two decorative emoji at the end add to the AI feel.\n\nIf you want it to sound more personal, add one real detail, such as why you picked Acme or what you're most curious about in the migration. A concrete detail does more than any adjective.\n"}], "grading": {"expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": false, "evidence": "No template headings"}, {"text": "The response states the original and new word counts.", "passed": false, "evidence": "No word counts"}, {"text": "The rewritten post is in English while the explanation of changes is in Vietnamese.", "passed": false, "evidence": "Explanation is in English"}, {"text": "The rewritten post keeps: Senior Data Engineer, Acme Logistics, migrating a 40 TB warehouse from on-prem Oracle to Snowflake.", "passed": true, "evidence": "All facts kept"}, {"text": "The rewritten post contains none of: 'rapidly evolving landscape', 'testament', 'leveraging', 'cutting-edge', 'seamless', 'robust', 'embarked'.", "passed": true, "evidence": "None of the listed words remain"}], "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4}}}, {"id": "vietnamese-spa-post-with_skill", "prompt": "g\u1ecdt l\u1ea1i gi\u00fap m\u00ecnh b\u00e0i \u0111\u0103ng fb n\u00e0y, \u0111\u1ecdc s\u1ebfn qu\u00e1: \"Trong cu\u1ed9c s\u1ed1ng b\u1ed9n b\u1ec1 h\u1ed1i h\u1ea3 ng\u00e0y nay, vi\u1ec7c d\u00e0nh th\u1eddi gian ch\u0103m s\u00f3c b\u1ea3n th\u00e2n l\u00e0 v\u00f4 c\u00f9ng quan tr\u1ecdng. Spa Hoa Sen t\u1ef1 h\u00e0o mang \u0111\u1ebfn cho qu\u00fd kh\u00e1ch h\u00e0ng tr\u1ea3i nghi\u1ec7m th\u01b0 gi\u00e3n tuy\u1ec7t v\u1eddi, \u0111\u1eb3ng c\u1ea5p v\u00e0 kh\u00e1c bi\u1ec7t. Kh\u00f4ng ch\u1ec9 s\u1edf h\u1eefu \u0111\u1ed9i ng\u0169 k\u1ef9 thu\u1eadt vi\u00ean chuy\u00ean nghi\u1ec7p, t\u1eadn t\u00e2m, ch\u00fang t\u00f4i c\u00f2n s\u1eed d\u1ee5ng 100% tinh d\u1ea7u thi\u00ean nhi\u00ean nh\u1eadp kh\u1ea9u t\u1eeb Ph\u00e1p. Gi\u1ea3m 30% cho kh\u00e1ch h\u00e0ng \u0111\u1eb7t l\u1ecbch tr\u01b0\u1edbc 30/11. C\u00f2n ch\u1ea7n ch\u1edd g\u00ec n\u1eefa m\u00e0 kh\u00f4ng \u0111\u1ebfn ngay v\u1edbi Spa Hoa Sen \u0111\u1ec3 t\u1eadn h\u01b0\u1edfng nh\u1eefng gi\u00e2y ph\u00fat tuy\u1ec7t v\u1eddi nh\u1ea5t? Hy v\u1ecdng \u0111\u01b0\u1ee3c ph\u1ee5c v\u1ee5 qu\u00fd kh\u00e1ch!\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "## B\u1ea3n \u0111\u00e3 g\u1ecdt\n\n```\nSpa Hoa Sen gi\u1ea3m 30% cho kh\u00e1ch \u0111\u1eb7t l\u1ecbch tr\u01b0\u1edbc 30/11.\n\nTinh d\u1ea7u d\u00f9ng \u1edf spa l\u00e0 100% tinh d\u1ea7u thi\u00ean nhi\u00ean nh\u1eadp t\u1eeb Ph\u00e1p. K\u1ef9 thu\u1eadt vi\u00ean [s\u1ed1 n\u0103m kinh nghi\u1ec7m / ch\u1ee9ng ch\u1ec9, n\u1ebfu c\u00f3].\n\nNh\u1eafn tin cho page ho\u1eb7c g\u1ecdi [s\u1ed1 \u0111i\u1ec7n tho\u1ea1i] \u0111\u1ec3 gi\u1eef l\u1ecbch.\n```\n\n## \u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec\n- M\u1edf b\u00e0i r\u1ed7ng: \"Trong cu\u1ed9c s\u1ed1ng b\u1ed9n b\u1ec1 h\u1ed1i h\u1ea3 ng\u00e0y nay\u2026 v\u00f4 c\u00f9ng quan tr\u1ecdng\" \u2192 b\u1ecf. \u01afu \u0111\u00e3i gi\u1ea3m 30% l\u00e0 th\u1ee9 khi\u1ebfn ng\u01b0\u1eddi ta d\u1eebng l\u1ea1i \u0111\u1ecdc, n\u00ean m\u00ecnh \u0111\u01b0a n\u00f3 l\u00ean c\u00e2u \u0111\u1ea7u.\n- T\u00ednh t\u1eeb kh\u00f4ng \u0111o \u0111\u01b0\u1ee3c: \"tuy\u1ec7t v\u1eddi, \u0111\u1eb3ng c\u1ea5p v\u00e0 kh\u00e1c bi\u1ec7t\", \"chuy\u00ean nghi\u1ec7p, t\u1eadn t\u00e2m\", \"gi\u00e2y ph\u00fat tuy\u1ec7t v\u1eddi nh\u1ea5t\" \u2192 b\u1ecf. Ch\u1ec9 gi\u1eef chi ti\u1ebft ki\u1ec3m ch\u1ee9ng \u0111\u01b0\u1ee3c: 100% tinh d\u1ea7u thi\u00ean nhi\u00ean nh\u1eadp t\u1eeb Ph\u00e1p.\n- C\u1ea5u tr\u00fac \"Kh\u00f4ng ch\u1ec9\u2026 m\u00e0 c\u00f2n\u2026\" \u2192 t\u00e1ch th\u00e0nh c\u00e2u \u0111\u01a1n. V\u1ec1 k\u1ef9 thu\u1eadt vi\u00ean, b\u00e0i g\u1ed1c ch\u1ec9 khen chung chung n\u00ean m\u00ecnh \u0111\u1ec3 ch\u1ed7 tr\u1ed1ng `[s\u1ed1 n\u0103m kinh nghi\u1ec7m / ch\u1ee9ng ch\u1ec9]`. N\u1ebfu c\u00f3 con s\u1ed1 th\u1eadt th\u00ec \u0111i\u1ec1n v\u00e0o, kh\u00f4ng c\u00f3 th\u00ec x\u00f3a lu\u00f4n c\u00e2u \u0111\u00f3.\n- C\u00e2u h\u1ecfi tu t\u1eeb \"C\u00f2n ch\u1ea7n ch\u1edd g\u00ec n\u1eefa m\u00e0 kh\u00f4ng \u0111\u1ebfn ngay\u2026?\" \u2192 \u0111\u1ed5i th\u00e0nh vi\u1ec7c c\u1ee5 th\u1ec3 kh\u00e1ch c\u1ea7n l\u00e0m: nh\u1eafn page ho\u1eb7c g\u1ecdi s\u1ed1 `[s\u1ed1 \u0111i\u1ec7n tho\u1ea1i]`.\n- K\u1ebft b\u00e0i kh\u00e1ch s\u00e1o \"Hy v\u1ecdng \u0111\u01b0\u1ee3c ph\u1ee5c v\u1ee5 qu\u00fd kh\u00e1ch!\" v\u00e0 gi\u1ecdng \"t\u1ef1 h\u00e0o mang \u0111\u1ebfn cho qu\u00fd kh\u00e1ch h\u00e0ng\" \u2192 b\u1ecf. B\u00e0i d\u00f9ng ch\u1eef \"kh\u00e1ch\" cho g\u1ea7n g\u0169i h\u01a1n, h\u1ee3p v\u1edbi Facebook.\n\n\u0110\u1ed9 d\u00e0i: 108 \u2192 47 t\u1eeb (t\u00ednh c\u1ea3 hai ch\u1ed7 tr\u1ed1ng c\u1ea7n \u0111i\u1ec1n).\n\nG\u1ee3i \u00fd th\u00eam: n\u1ebfu c\u00f3 gi\u00e1 c\u1ee5 th\u1ec3 (v\u00ed d\u1ee5 \"massage body 60 ph\u00fat: 500k \u2192 350k\") th\u00ec th\u00eam m\u1ed9t d\u00f2ng gi\u00e1. M\u1ed9t con s\u1ed1 c\u1ee5 th\u1ec3 nh\u01b0 v\u1eady thuy\u1ebft ph\u1ee5c h\u01a1n m\u1ecdi t\u00ednh t\u1eeb.\n"}], "grading": {"expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": true, "evidence": "Both headings"}, {"text": "The response states the original and new word counts.", "passed": true, "evidence": "108 \u2192 47 t\u1eeb"}, {"text": "The rewritten post keeps the facts: natural essential oils from France, 30% discount, booking before 30/11.", "passed": true, "evidence": "Ph\u00e1p, 30%, 30/11 kept"}, {"text": "The rewritten post no longer contains 'Trong cu\u1ed9c s\u1ed1ng b\u1ed9n b\u1ec1', 'v\u00f4 c\u00f9ng quan tr\u1ecdng', 'C\u00f2n ch\u1ea7n ch\u1edd g\u00ec n\u1eefa', or 'Hy v\u1ecdng \u0111\u01b0\u1ee3c ph\u1ee5c v\u1ee5'.", "passed": true, "evidence": "All listed clich\u00e9s removed"}, {"text": "The rewritten post does not add facts absent from the original (e.g. prices, addresses, phone numbers) except as clearly marked [placeholders].", "passed": true, "evidence": "Unknowns left as [s\u1ed1 n\u0103m kinh nghi\u1ec7m], [s\u1ed1 \u0111i\u1ec7n tho\u1ea1i]"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "vietnamese-spa-post-without_skill", "prompt": "g\u1ecdt l\u1ea1i gi\u00fap m\u00ecnh b\u00e0i \u0111\u0103ng fb n\u00e0y, \u0111\u1ecdc s\u1ebfn qu\u00e1: \"Trong cu\u1ed9c s\u1ed1ng b\u1ed9n b\u1ec1 h\u1ed1i h\u1ea3 ng\u00e0y nay, vi\u1ec7c d\u00e0nh th\u1eddi gian ch\u0103m s\u00f3c b\u1ea3n th\u00e2n l\u00e0 v\u00f4 c\u00f9ng quan tr\u1ecdng. Spa Hoa Sen t\u1ef1 h\u00e0o mang \u0111\u1ebfn cho qu\u00fd kh\u00e1ch h\u00e0ng tr\u1ea3i nghi\u1ec7m th\u01b0 gi\u00e3n tuy\u1ec7t v\u1eddi, \u0111\u1eb3ng c\u1ea5p v\u00e0 kh\u00e1c bi\u1ec7t. Kh\u00f4ng ch\u1ec9 s\u1edf h\u1eefu \u0111\u1ed9i ng\u0169 k\u1ef9 thu\u1eadt vi\u00ean chuy\u00ean nghi\u1ec7p, t\u1eadn t\u00e2m, ch\u00fang t\u00f4i c\u00f2n s\u1eed d\u1ee5ng 100% tinh d\u1ea7u thi\u00ean nhi\u00ean nh\u1eadp kh\u1ea9u t\u1eeb Ph\u00e1p. Gi\u1ea3m 30% cho kh\u00e1ch h\u00e0ng \u0111\u1eb7t l\u1ecbch tr\u01b0\u1edbc 30/11. C\u00f2n ch\u1ea7n ch\u1edd g\u00ec n\u1eefa m\u00e0 kh\u00f4ng \u0111\u1ebfn ngay v\u1edbi Spa Hoa Sen \u0111\u1ec3 t\u1eadn h\u01b0\u1edfng nh\u1eefng gi\u00e2y ph\u00fat tuy\u1ec7t v\u1eddi nh\u1ea5t? Hy v\u1ecdng \u0111\u01b0\u1ee3c ph\u1ee5c v\u1ee5 qu\u00fd kh\u00e1ch!\"", "eval_id": null, "outputs": [{"name": "response.md", "type": "text", "content": "B\u1ea3n g\u1ecdt l\u1ea1i:\n\n---\n\n**Spa Hoa Sen gi\u1ea3m 30% cho kh\u00e1ch \u0111\u1eb7t l\u1ecbch tr\u01b0\u1edbc 30/11.**\n\nTinh d\u1ea7u b\u00ean m\u00ecnh d\u00f9ng l\u00e0 tinh d\u1ea7u thi\u00ean nhi\u00ean nh\u1eadp t\u1eeb Ph\u00e1p, 100%. K\u1ef9 thu\u1eadt vi\u00ean l\u00e0m ngh\u1ec1 l\u00e2u n\u0103m, l\u00e0m k\u1ef9, kh\u00f4ng v\u1ed9i.\n\nTu\u1ea7n n\u00e0y m\u1ec7t th\u00ec gh\u00e9 n\u1eb1m m\u1ed9t ti\u1ebfng cho gi\u00e3n vai g\u00e1y. Nh\u1eafn tin cho page \u0111\u1ec3 gi\u1eef l\u1ecbch nh\u00e9.\n\n---\n\nM\u00ecnh \u0111\u00e3 s\u1eeda m\u1ea5y ch\u1ed7 sau:\n\n- **\u0110\u01b0a \u01b0u \u0111\u00e3i l\u00ean \u0111\u1ea7u.** Gi\u1ea3m 30% l\u00e0 th\u1ee9 khi\u1ebfn ng\u01b0\u1eddi ta d\u1eebng l\u1ea1i khi l\u01b0\u1edbt, n\u00ean m\u00ecnh cho n\u00f3 l\u00e0m c\u00e2u m\u1edf. C\u00e2u c\u0169 \"Trong cu\u1ed9c s\u1ed1ng b\u1ed9n b\u1ec1 h\u1ed1i h\u1ea3 ng\u00e0y nay...\" th\u00ec ai c\u0169ng vi\u1ebft r\u1ed3i, ng\u01b0\u1eddi \u0111\u1ecdc l\u01b0\u1edbt qua lu\u00f4n.\n- **B\u1ecf m\u1ea5y ch\u1eef khen chung chung** nh\u01b0 \"tuy\u1ec7t v\u1eddi, \u0111\u1eb3ng c\u1ea5p v\u00e0 kh\u00e1c bi\u1ec7t\", \"chuy\u00ean nghi\u1ec7p, t\u1eadn t\u00e2m\", \"nh\u1eefng gi\u00e2y ph\u00fat tuy\u1ec7t v\u1eddi nh\u1ea5t\". Spa n\u00e0o c\u0169ng t\u1ef1 n\u00f3i v\u1eady n\u00ean kh\u00e1ch kh\u00f4ng tin. M\u00ecnh gi\u1eef l\u1ea1i chi ti\u1ebft c\u00f3 th\u1eadt l\u00e0 tinh d\u1ea7u nh\u1eadp t\u1eeb Ph\u00e1p.\n- **B\u1ecf \"C\u00f2n ch\u1ea7n ch\u1edd g\u00ec n\u1eefa...\" v\u00e0 \"Hy v\u1ecdng \u0111\u01b0\u1ee3c ph\u1ee5c v\u1ee5 qu\u00fd kh\u00e1ch!\"** Hai c\u00e2u n\u00e0y nghe nh\u01b0 qu\u1ea3ng c\u00e1o \u0111\u1ecdc tr\u00ean loa. M\u00ecnh thay b\u1eb1ng m\u1ed9t l\u1eddi m\u1eddi c\u1ee5 th\u1ec3: nh\u1eafn page \u0111\u1ec3 gi\u1eef l\u1ecbch.\n- **\u0110\u1ed5i \"qu\u00fd kh\u00e1ch / ch\u00fang t\u00f4i\" th\u00e0nh \"b\u1ea1n / b\u00ean m\u00ecnh\"** \u0111\u1ec3 \u0111\u1ecdc gi\u1ed1ng ng\u01b0\u1eddi n\u00f3i chuy\u1ec7n tr\u00ean Facebook.\n\nC\u00f3 m\u1ea5y ch\u1ed7 b\u1ea1n n\u00ean t\u1ef1 ki\u1ec3m tra ho\u1eb7c th\u00eam v\u00e0o:\n- \"K\u1ef9 thu\u1eadt vi\u00ean l\u00e0m ngh\u1ec1 l\u00e2u n\u0103m\" l\u00e0 m\u00ecnh t\u1ef1 th\u00eam. N\u1ebfu c\u00f3 s\u1ed1 c\u1ee5 th\u1ec3 (v\u00ed d\u1ee5 \"tr\u00ean 5 n\u0103m kinh nghi\u1ec7m\") th\u00ec ghi s\u1ed1 v\u00e0o cho \u0111\u00e1ng tin h\u01a1n. N\u1ebfu kh\u00f4ng \u0111\u00fang th\u00ec xo\u00e1 c\u00e2u n\u00e0y \u0111i.\n- N\u00ean th\u00eam \u0111\u1ecba ch\u1ec9, s\u1ed1 \u0111i\u1ec7n tho\u1ea1i ho\u1eb7c link \u0111\u1eb7t l\u1ecbch, v\u00e0 1-2 d\u1ecbch v\u1ee5 ch\u00ednh k\u00e8m gi\u00e1 sau gi\u1ea3m (v\u00ed d\u1ee5: \"Massage body 60 ph\u00fat: 350k \u2192 245k\"). C\u00f3 con s\u1ed1 c\u1ee5 th\u1ec3 th\u00ec ng\u01b0\u1eddi ta d\u1ec5 quy\u1ebft \u0111\u1ecbnh h\u01a1n.\n"}], "grading": {"expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": false, "evidence": "No template headings"}, {"text": "The response states the original and new word counts.", "passed": false, "evidence": "No word counts"}, {"text": "The rewritten post keeps the facts: natural essential oils from France, 30% discount, booking before 30/11.", "passed": true, "evidence": "Ph\u00e1p, 30%, 30/11 kept"}, {"text": "The rewritten post no longer contains 'Trong cu\u1ed9c s\u1ed1ng b\u1ed9n b\u1ec1', 'v\u00f4 c\u00f9ng quan tr\u1ecdng', 'C\u00f2n ch\u1ea7n ch\u1edd g\u00ec n\u1eefa', or 'Hy v\u1ecdng \u0111\u01b0\u1ee3c ph\u1ee5c v\u1ee5'.", "passed": true, "evidence": "Clich\u00e9s removed"}, {"text": "The rewritten post does not add facts absent from the original (e.g. prices, addresses, phone numbers) except as clearly marked [placeholders].", "passed": false, "evidence": "Adds 'K\u1ef9 thu\u1eadt vi\u00ean l\u00e0m ngh\u1ec1 l\u00e2u n\u0103m' and 'n\u1eb1m m\u1ed9t ti\u1ebfng cho gi\u00e3n vai g\u00e1y', not in original (flagged afterwards)"}], "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "stop-slop", "skill_path": "\u003cpath/to/skill>", "executor_model": "\u003cmodel-name>", "analyzer_model": "\u003cmodel-name>", "timestamp": "2026-10-25T15:32:26Z", "evals_run": ["already-clean-email", "english-linkedin-update", "vietnamese-spa-post"], "runs_per_configuration": 1}, "runs": [{"eval_id": "already-clean-email", "eval_name": "already-clean-email", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 25.4, "tokens": 51543, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": true, "evidence": "Both headings"}, {"text": "The response states the original and new word counts.", "passed": true, "evidence": "43 \u2192 43 t\u1eeb"}, {"text": "The response explicitly says the original is already concise/clean.", "passed": true, "evidence": "'\u0110o\u1ea1n email n\u00e0y \u0111\u00e3 g\u1ecdn r\u1ed3i'"}, {"text": "The rewritten email keeps all information: b\u00e1o c\u00e1o th\u00e1ng 10, t\u0103ng 12% so v\u1edbi th\u00e1ng 9, k\u00eanh Shopee, g\u00f3p \u00fd tr\u01b0\u1edbc th\u1ee9 S\u00e1u.", "passed": true, "evidence": "Wording unchanged"}], "notes": []}, {"eval_id": "english-linkedin-update", "eval_name": "english-linkedin-update", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 33.3, "tokens": 52961, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": true, "evidence": "Both headings"}, {"text": "The response states the original and new word counts.", "passed": true, "evidence": "82 \u2192 35 t\u1eeb"}, {"text": "The rewritten post is in English while the explanation of changes is in Vietnamese.", "passed": true, "evidence": "Post in English, explanation in Vietnamese"}, {"text": "The rewritten post keeps: Senior Data Engineer, Acme Logistics, migrating a 40 TB warehouse from on-prem Oracle to Snowflake.", "passed": true, "evidence": "All facts kept"}, {"text": "The rewritten post contains none of: 'rapidly evolving landscape', 'testament', 'leveraging', 'cutting-edge', 'seamless', 'robust', 'embarked'.", "passed": true, "evidence": "None of the listed words remain"}], "notes": []}, {"eval_id": "vietnamese-spa-post", "eval_name": "vietnamese-spa-post", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 38.9, "tokens": 53998, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": true, "evidence": "Both headings"}, {"text": "The response states the original and new word counts.", "passed": true, "evidence": "108 \u2192 47 t\u1eeb"}, {"text": "The rewritten post keeps the facts: natural essential oils from France, 30% discount, booking before 30/11.", "passed": true, "evidence": "Ph\u00e1p, 30%, 30/11 kept"}, {"text": "The rewritten post no longer contains 'Trong cu\u1ed9c s\u1ed1ng b\u1ed9n b\u1ec1', 'v\u00f4 c\u00f9ng quan tr\u1ecdng', 'C\u00f2n ch\u1ea7n ch\u1edd g\u00ec n\u1eefa', or 'Hy v\u1ecdng \u0111\u01b0\u1ee3c ph\u1ee5c v\u1ee5'.", "passed": true, "evidence": "All listed clich\u00e9s removed"}, {"text": "The rewritten post does not add facts absent from the original (e.g. prices, addresses, phone numbers) except as clearly marked [placeholders].", "passed": true, "evidence": "Unknowns left as [s\u1ed1 n\u0103m kinh nghi\u1ec7m], [s\u1ed1 \u0111i\u1ec7n tho\u1ea1i]"}], "notes": []}, {"eval_id": "already-clean-email", "eval_name": "already-clean-email", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 2, "failed": 2, "total": 4, "time_seconds": 14.2, "tokens": 47575, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": false, "evidence": "No template headings"}, {"text": "The response states the original and new word counts.", "passed": false, "evidence": "No word counts"}, {"text": "The response explicitly says the original is already concise/clean.", "passed": true, "evidence": "Says the email barely needs editing"}, {"text": "The rewritten email keeps all information: b\u00e1o c\u00e1o th\u00e1ng 10, t\u0103ng 12% so v\u1edbi th\u00e1ng 9, k\u00eanh Shopee, g\u00f3p \u00fd tr\u01b0\u1edbc th\u1ee9 S\u00e1u.", "passed": true, "evidence": "All information kept"}], "notes": []}, {"eval_id": "english-linkedin-update", "eval_name": "english-linkedin-update", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.4, "passed": 2, "failed": 3, "total": 5, "time_seconds": 16.3, "tokens": 47890, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": false, "evidence": "No template headings"}, {"text": "The response states the original and new word counts.", "passed": false, "evidence": "No word counts"}, {"text": "The rewritten post is in English while the explanation of changes is in Vietnamese.", "passed": false, "evidence": "Explanation is in English"}, {"text": "The rewritten post keeps: Senior Data Engineer, Acme Logistics, migrating a 40 TB warehouse from on-prem Oracle to Snowflake.", "passed": true, "evidence": "All facts kept"}, {"text": "The rewritten post contains none of: 'rapidly evolving landscape', 'testament', 'leveraging', 'cutting-edge', 'seamless', 'robust', 'embarked'.", "passed": true, "evidence": "None of the listed words remain"}], "notes": []}, {"eval_id": "vietnamese-spa-post", "eval_name": "vietnamese-spa-post", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.4, "passed": 2, "failed": 3, "total": 5, "time_seconds": 23.6, "tokens": 48787, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The response contains the headings 'B\u1ea3n \u0111\u00e3 g\u1ecdt' and '\u0110\u00e3 b\u1ecf / s\u1eeda g\u00ec'.", "passed": false, "evidence": "No template headings"}, {"text": "The response states the original and new word counts.", "passed": false, "evidence": "No word counts"}, {"text": "The rewritten post keeps the facts: natural essential oils from France, 30% discount, booking before 30/11.", "passed": true, "evidence": "Ph\u00e1p, 30%, 30/11 kept"}, {"text": "The rewritten post no longer contains 'Trong cu\u1ed9c s\u1ed1ng b\u1ed9n b\u1ec1', 'v\u00f4 c\u00f9ng quan tr\u1ecdng', 'C\u00f2n ch\u1ea7n ch\u1edd g\u00ec n\u1eefa', or 'Hy v\u1ecdng \u0111\u01b0\u1ee3c ph\u1ee5c v\u1ee5'.", "passed": true, "evidence": "Clich\u00e9s removed"}, {"text": "The rewritten post does not add facts absent from the original (e.g. prices, addresses, phone numbers) except as clearly marked [placeholders].", "passed": false, "evidence": "Adds 'K\u1ef9 thu\u1eadt vi\u00ean l\u00e0m ngh\u1ec1 l\u00e2u n\u0103m' and 'n\u1eb1m m\u1ed9t ti\u1ebfng cho gi\u00e3n vai g\u00e1y', not in original (flagged afterwards)"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 32.5333, "stddev": 6.7826, "min": 25.4, "max": 38.9}, "tokens": {"mean": 52834.0, "stddev": 1232.4175, "min": 51543, "max": 53998}}, "without_skill": {"pass_rate": {"mean": 0.4333, "stddev": 0.0577, "min": 0.4, "max": 0.5}, "time_seconds": {"mean": 18.0333, "stddev": 4.9339, "min": 14.2, "max": 23.6}, "tokens": {"mean": 48084.0, "stddev": 628.8585, "min": 47575, "max": 48787}}, "delta": {"pass_rate": "+0.57", "time_seconds": "+14.5", "tokens": "+4750"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + escapeHtml(summary.passed || 0) + ' passed, ' + escapeHtml(summary.failed || 0) + ' failed of ' + escapeHtml(summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML.replace(/"/g, "&quot;");
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += escapeHtml(metadata.timestamp) + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + escapeHtml(metadata.evals_run.join(", ")) + " &mdash; ";
+      html += escapeHtml(metadata.runs_per_configuration || "?") + (metadata.runs_per_configuration === 1 ? " run" : " runs") + " per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+      // With a single configuration there is nothing to compare: only its column is shown
+      const compare = cells => configs.length >= 2 ? cells : "";
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th>" + compare("<th>" + escapeHtml(labelB) + "</th><th>Delta</th>") + "</tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += compare("<td>" + fmtStat(b.pass_rate, true) + "</td>");
+      html += compare('<td class="' + deltaClass(delta.pass_rate) + '">' + escapeHtml(delta.pass_rate || "—") + "</td>") + "</tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += compare("<td>" + fmtStat(b.time_seconds, false) + "</td>");
+        html += compare('<td class="' + deltaClass(delta.time_seconds) + '">' + escapeHtml(delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td>") + "</tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += compare("<td>" + fmtStat(b.tokens, false) + "</td>");
+        html += compare('<td class="' + deltaClass(delta.tokens) + '">' + escapeHtml(delta.tokens || "—") + "</td>") + "</tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        // Numeric ids first, then ids that are names
+        const rank = id => typeof id === "number" ? 0 : 1;
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) =>
+          rank(a) - rank(b) || (rank(a) ? String(a).localeCompare(String(b)) : a - b));
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = escapeHtml(config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + escapeHtml(run.run_number) + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + escapeHtml(r.passed || 0) + "/" + escapeHtml(r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + escapeHtml(r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + escapeHtml(run.run_number) + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

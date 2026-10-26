@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: code-prompt-python
+expected_outcome: |
+  Dù đầu vào là tiếng Anh, câu trả lời và prompt cải thiện bằng tiếng Việt, nêu rõ ngôn ngữ/phiên bản Python, quy tắc đổi tên, đầu vào/đầu ra, trường hợp biên.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: image-prompt-midjourney
+expected_outcome: |
+  Prompt tiếng Việt dạng đoạn mô tả liền mạch (chủ thể, bối cảnh, ánh sáng, phong cách, góc máy, tỉ lệ khung hình), kèm bản tiếng Anh để dán vào Midjourney, và giải thích thay đổi bằng tiếng Việt.

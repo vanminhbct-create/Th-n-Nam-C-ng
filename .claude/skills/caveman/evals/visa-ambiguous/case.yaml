@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: visa-ambiguous
+expected_outcome: |
+  Danh sách cụt các giấy tờ chính cho visa du lịch Nhật, hoặc hỏi lại thông tin thiếu cụt lủn; tiếng Việt, ngắn.

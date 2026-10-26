@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: vague-email-request
+expected_outcome: |
+  Trả lời hoàn toàn bằng tiếng Việt với prompt đã cải thiện trong khối code, có chỗ trống như [ngày nghỉ], [lý do], kèm danh sách thay đổi.
